@@ -23,7 +23,7 @@ CONCAT(t.table_schema, '.', t.table_name) as table_name,c.column_name,
 c.ordinal_position,c.data_type,c.character_maximum_length,
 case when tt.from_table is null then null else 'f' end as constraint_type,
 case when tt.from_table is null then null else 'public' end as table_schema, --case when tt.from_table is null then null else t2.table_schema end as table_schema,
-CONCAT(tjn.table_schema, '.', tt.to_table) as table_name, 
+case when tt.from_table is null then null else CONCAT(tjn.table_schema, '.', tt.to_table) end as table_name, 
 tt.to_column as column_name
 FROM information_schema.tables t 
 left JOIN information_schema.columns c on t.table_name=c.table_name and t.table_schema=c.table_schema
