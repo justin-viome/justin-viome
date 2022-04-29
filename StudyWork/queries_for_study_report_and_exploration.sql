@@ -23,19 +23,7 @@ from chat_flow_request cfr
 join ai_info.chat_flow_template cft on cft.id=cfr.chat_flow_template_id
 group by cfr.chat_flow_template_id, cft.name, cft.description
 order by 1,2,3;
--- get number of questions asked 
 
--- get number of questions answered 
-
--- are any questions answered multiple times? 
--- yes; took 22ms to run so commenting out
---select a."userId", a.questionnaire_id, count(*) as answer_count 
---from "ANSWER" a
---group by a."userId", a.test_id
---order by 3 desc;
-
--- questionnaire_id is always null 
-select count(*) from "ANSWER" where questionnaire_id is not null
 
 select * from study_info.study_participant sp
 join study_info.participant p on p.participant_id=sp.participant_id  
@@ -83,11 +71,58 @@ select * from kits_for_study_users k
 where (k.kit_updated <= study_participation_start_time) and ((k.kit_updated + INTERVAL '14 day') >= study_participation_start_time)
 order by k.study_id, k.user_id desc;
 
--- for questions can join study_info.intervention_study_feature with feature and join with  an
--- can count # of questions by looking just at interventionstudyfeature
 
--- can look at study_sample and get count of distinct externalid (bioinfoedge 
+-- there's more to kits than kit table. Angel will update me on how they get updated. 
+
+-- can look at study_sample and get count of distinct externalid (bioinfoedge reference)
 -- one participant may have more than one 
+
+
+-- 4350 samples vs 5633 kits  within 2 weeks 
+select * from study_info.study_sample;
+-- discuss with Pedro and Angel 
+
+-- get number of questions asked 
+
+-- get number of questions answered 
+
+-- are any questions answered multiple times? 
+-- yes; took 22ms to run so commenting out
+--select a."userId", a.questionnaire_id, count(*) as answer_count 
+--from "ANSWER" a
+--group by a."userId", a.test_id
+--order by 3 desc;
+
+-- questionnaire_id is always null 
+select count(*) from "ANSWER" where questionnaire_id is not null;
+
+-- for questions can join study_info.intervention_study_feature with feature and join with question.  
+-- for now considering one feature=one question 
+-- can count # of questions by looking just at interventionstudyfeature
+select sf.study_id, count(distinct sf.feature_id) as question_count 
+from study_info.intervention_study_feature sf
+group by study_id
+order by study_id;
+
+-- count answers
+-- took 73s for this query to run with massive results...join conditions aren't right 
+/*
+4	4913
+5	315261
+6	35212
+7	128833
+8	54289
+9	26325744
+12	847189
+*/
+select sf.study_id, count(distinct a.id) as answer_count
+from "ANSWER" a 
+join study_info.feature f on f.question_id=a."questionId"
+join study_info.intervention_study_feature sf on f.feature_id=sf.feature_id
+group by sf.study_id
+order by sf.study_id;
+
+
 
 
 
