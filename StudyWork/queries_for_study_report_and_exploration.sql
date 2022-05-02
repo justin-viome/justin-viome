@@ -77,17 +77,25 @@ order by k.study_id, k.user_id desc;
 -- can look at study_sample and get count of distinct externalid (bioinfoedge reference)
 -- one participant may have more than one 
 
-
+-- discuss with Pedro and Angel 
 -- 4350 samples vs 5633 kits  within 2 weeks 
 select * from study_info.study_sample;
--- discuss with Pedro and Angel 
 
--- get number of questions asked 
+-- 20 rows have null study id
+select * from study_info.study_sample where study_id is null;
 
--- get number of questions answered 
+-- get breakdown of study samples by type
+select study_id, count(distinct study_sample_id) filter (where st.sample_type_id=1) as "Stool Samples",
+	count(distinct study_sample_id) filter (where st.sample_type_id=2) as "Blood Samples",
+	count(distinct study_sample_id) filter (where st.sample_type_id=3) as "Saliva Samples"
+from study_info.study_sample s
+join study_info.sample_type st on s.sample_type_id=st.sample_type_id
+where st.sample_type_id in (1,2,3) -- stool, blood, saliva
+group by s.study_id
+order by s.study_id asc;
 
 -- are any questions answered multiple times? 
--- yes; took 22ms to run so commenting out
+-- yes; took 22s to run so commenting out
 --select a."userId", a.questionnaire_id, count(*) as answer_count 
 --from "ANSWER" a
 --group by a."userId", a.test_id
@@ -105,22 +113,14 @@ group by study_id
 order by study_id;
 
 -- count answers
--- took 73s for this query to run with massive results...join conditions aren't right 
-/*
-4	4913
-5	315261
-6	35212
-7	128833
-8	54289
-9	26325744
-12	847189
-*/
-select sf.study_id, count(distinct a.id) as answer_count
-from "ANSWER" a 
-join study_info.feature f on f.question_id=a."questionId"
-join study_info.intervention_study_feature sf on f.feature_id=sf.feature_id
+select sf.study_id, count(a.*) as answer_count
+from study_info.response a 
+join study_info.intervention_study_feature sf on a.feature_id=sf.feature_id
 group by sf.study_id
 order by sf.study_id;
+
+
+
 
 
 
