@@ -1,25 +1,23 @@
 --justin.thomson@viome.com
 -- one study reporting query to rule them all
 
--- questions
--- for chat_flow_requests, add a "study_id" column and populate it based on the name column?
--- will need this so query updates not needed to get chat flow data for future studies
 
 with notifications as (
--- add studyid to info from chat flow requests for easier reporting 
-	select case when cft.id=2 then 1
-		when cft.id=11 then 12 
-		when cft.id=12 then 4
-		when cft.id=13 then 6
-		when cft.id=14 then 5
-		when cft.id=16 then 7
-		when cft.id=18 then 8
-		when cft.id=19 then 9
-		end as study_id, count(distinct cfr.user_id) as Users_Contacted
+	select iscft.study_id, count(distinct cfr.user_id) as Users_Contacted
 	from chat_flow_request cfr
 	join ai_info.chat_flow_template cft on cft.id=cfr.chat_flow_template_id
-	group by 1
+	join study_info.intervention_study_chat_flow_template iscft on iscft.chat_flow_template_id=cft.id
+	group by iscft.study_id
 ), 
+stoolkitsamples as (
+	select sp.study_id, count(distinct k."kitId") as StoolCount
+	from study_info.study_participant sp
+	join study_info.participant p on p.participant_id=sp.participant_id  
+	join "KIT" k on k."userId"=p.user_id
+	join kit_type kt on kt.id = k.kit_type_id and k.kit_type_id=1 -- 1=GI
+	where k.kit_status_id=10 and (k.updated <= sp.start_time) and ((k.updated + INTERVAL '14 day') >= sp.start_time)
+	group by sp.study_id
+),
 studsamples as (
 -- get breakdown of study samples by type
 	select study_id, count(distinct study_sample_id) filter (where st.sample_type_id=1) as Stool_Samples,
@@ -32,9 +30,13 @@ studsamples as (
 ),
 qanda as (
 -- get question and answer data 
+-- study_info.response stores answers from outside viome online
+-- public.ANSWER stores answers from viome online
+-- output needs to be combination of the two 
+-- feature can be used in multiple studies, but response can only be in one
 	select sf.study_id, count(distinct sf.feature_id) as Questions, count(a.*) as Answers 
 	from study_info.intervention_study_feature sf
-	left join study_info.response a on a.feature_id=sf.feature_id
+	left join study_info.response a on a.feature_id=sf.feature_id and a.study_id=sf.study_id
 	group by sf.study_id
 ),
 baseinfo as (

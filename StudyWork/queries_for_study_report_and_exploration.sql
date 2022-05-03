@@ -121,9 +121,19 @@ order by sf.study_id;
 
 
 
+-- need to join against ANSWER to get answers, not response
 
+-- add ANSWER count + response count 
 
+-- studyinfo response has data from non-viome online customers
+--- chatbot answers end up here
+--study_info.intervention_study_feature, feature, answer
 
+-- TODO
+-- for stool only
+studyid=1,10,11 can use study sample
+for every other study need to look in kit table
+- can add counts for a general approach
 
 
 -- Castor playaround
@@ -132,4 +142,9 @@ from study_info.study s
 join study_info.castor_study_structure css on css.study_id = s.study_id
 order by 1 desc; 
 
+- 5,6,8, 12, 15
+-- 12, 15 are in castor
+-- studies intended to identify biomarkers 
+-- distribution of questionnaire scores could be worth visualizing
 
+-- service that scores questionnaires go off questionnaireid, 
