@@ -46,7 +46,7 @@ order by k."userId" desc;
 select k."userId", k.updated as kit_updated, k."kitId" as kit_id, sp.start_time as study_participation_start_time, * from study_info.study_participant sp
 join study_info.participant p on p.participant_id=sp.participant_id  
 join "KIT" k on k."userId"=p.user_id
-where study_id=5 and k.kit_status_id=10
+where study_id=5 and k.kit_status_id=10 and k.kit_type_id=1 -- 1=GI
 order by k."userId" desc;
 
 
@@ -63,13 +63,13 @@ select sp.study_id, k."userId" as user_id, k.updated as kit_updated, k."kitId" a
 from study_info.study_participant sp
 join study_info.participant p on p.participant_id=sp.participant_id  
 join "KIT" k on k."userId"=p.user_id
-join kit_type kt on kt.id = k.kit_type_id
-where study_id=5 and k.kit_status_id=10
+join kit_type kt on kt.id = k.kit_type_id and k.kit_type_id=1 -- 1=GI
+where k.kit_status_id=10
 )
 
-select * from kits_for_study_users k 
+select k.study_id, count(distinct k.kit_id) from kits_for_study_users k 
 where (k.kit_updated <= study_participation_start_time) and ((k.kit_updated + INTERVAL '14 day') >= study_participation_start_time)
-order by k.study_id, k.user_id desc;
+group by k.study_id;
 
 
 -- there's more to kits than kit table. Angel will update me on how they get updated. 
@@ -148,3 +148,51 @@ order by 1 desc; 
 -- distribution of questionnaire scores could be worth visualizing
 
 -- service that scores questionnaires go off questionnaireid, 
+
+
+	select study_id, count(distinct study_sample_id) filter (where st.sample_type_id=1) as Stool_Samples,
+		count(distinct study_sample_id) filter (where st.sample_type_id=2) as Blood_Samples,
+		count(distinct study_sample_id) filter (where st.sample_type_id=3) as Saliva_Samples
+	from study_info.study_sample s
+	join study_info.sample_type st on s.sample_type_id=st.sample_type_id
+	where st.sample_type_id in (1,2,3) -- stool, blood, saliva
+
+select p.user_id, * from study_info.study_participant
+join study_info.participant p on p.participant_id=study_participant.participant_id where study_id=9;
+
+	select a."userId", count(distinct a."questionId"), count(distinct a."id") as answers
+	from "ANSWER" a 
+	join study_info.feature f on a."questionId"=f.question_id
+	join study_info.intervention_study_feature isf on isf.feature_id=f.feature_id
+	join study_info.study_participant sp on isf.study_id=sp.study_id
+	join study_info.participant p on p.participant_id=sp.participant_id and p.user_id=a."userId"
+	where a.answerdate > sp.start_time and a.answerdate < sp.end_time and a.test_id is null and sp.study_id=9
+	group by a."userId"
+	order by 3 desc;
+	
+	-- latest answer by questionid
+	-- ignores cases where one question may have been validly answered > 1 times 
+	-- reach out to Oliver/table should be cleaned up and bug removed
+with tempt as 
+(
+	SELECT row_number()
+		over (partition by a."userId", a."questionId" ORDER BY answerdate desc) as row_number, 
+		a."userId" as user_id, a."questionId" as question_id, a."id" as answer_id, sp.study_id
+		FROM "ANSWER" a
+		join study_info.feature f on a."questionId"=f.question_id
+		join study_info.intervention_study_feature isf on isf.feature_id=f.feature_id
+		join study_info.study_participant sp on isf.study_id=sp.study_id
+		join study_info.participant p on p.participant_id=sp.participant_id and p.user_id=a."userId"
+
+) 
+SELECT a.study_id, count(distinct a.question_id), count(distinct a.answer_id) as answers from tempt a
+where a.row_number=1
+group by a.study_id
+order by 3 desc;
+
+-- query to highlight write problem with ANSWER table 
+select a."userId", a."questionId", count(distinct a."id") as answers
+from "ANSWER" a 
+group by a."userId", a."questionId"
+having count(distinct a."id") > 100
+order by 3 desc;
