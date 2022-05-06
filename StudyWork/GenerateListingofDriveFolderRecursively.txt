@@ -1,0 +1,96 @@
+/**
+ * justin.thomson@viome.com 
+ * Google Apps Script - List all files & folders in a Google Drive folder, & write into a speadsheet.
+ *    - Main function 1: List all folders
+ *    - Main function 2: List all files & folders
+ * 
+ * Hint: Set your folder ID first! You may copy the folder ID from the browser's address field. 
+ *       The folder ID is everything after the 'folders/' portion of the URL.
+ * 
+ * @version 1.1
+ * updated script with original code from: 
+ * @see     https://github.com/mesgarpour
+ * 
+ * Writes
+ * 4-25-22 - took 30min to run. 5,825 total folders and files in V Studies. 
+ *  
+ */
+ 
+var folderId = '1X0bdmO8FBXtAJIUWVwOXMyjlMx6a2yiE'; // full v studies folder
+// var folderId = '1gjzZ23u9JVNyFx9IE8MQPPS4ppUK_I4R' //test folder
+
+// Main function 1: List all folders, & write into the current sheet.
+function listFolers(){
+  getFolderTree(folderId, false);
+};
+
+// Main function 2: List all files & folders, & write into the current sheet.
+function listAll(){
+  getFolderTree(folderId, true); 
+};
+
+// =================
+// Get Folder Tree
+function getFolderTree(folderId, listAll) {
+  try {
+    // Get folder by id
+    var parentFolder = DriveApp.getFolderById(folderId);
+    
+    // Initialise the sheet
+    var file, data, sheet = SpreadsheetApp.getActiveSheet();
+    sheet.clear();
+    sheet.appendRow(["Path", "File Name", "Created", "Last Updated", "Size(MB)","Type", "URL"]);
+
+    // Get files and folders
+
+    // ignore intial folder name for output
+    getChildFolders("", parentFolder, data, sheet, listAll);
+    
+  } catch (e) {
+    Logger.log(e.toString());
+  }
+};
+
+// Get the list of files and folders and their metadata in recursive mode
+function getChildFolders(parentName, parent, data, sheet, listAll) {
+  var childFolders = parent.getFolders();
+
+  // List folders inside the folder
+  while (childFolders.hasNext()) {
+    var childFolder = childFolders.next();
+    //Logger.log("Folder Name: " + childFolder.getName());
+    data = [ 
+      parentName + "/" + childFolder.getName(),
+      "", // leave name column blank for folders childFolder.getName(),
+      childFolder.getDateCreated(),
+      childFolder.getLastUpdated(),
+      (childFolder.getSize()/1024.0).toFixed(3),
+      'Folder',
+      childFolder.getUrl()
+    ];
+    // Write
+    sheet.appendRow(data);
+    
+    // List files inside the folder
+    var files = childFolder.getFiles();
+    while (listAll & files.hasNext()) {
+      var childFile = files.next();
+      // Logger.log("File Name: " + childFile.getName());
+      data = [ 
+        // don't include full path in every row for speed 
+        parentName + "/" + childFolder.getName(),
+        childFile.getName(),
+        childFile.getDateCreated(),
+        childFile.getLastUpdated(),
+        (childFile.getSize()/1024.0).toFixed(3),
+        childFile.getMimeType(),
+        "" // ignore url for files to speed things up childFile.getUrl()
+      ];
+      // Write
+      sheet.appendRow(data);
+    }
+    
+    // Recursive call of the subfolder
+    getChildFolders(parentName + "/" + childFolder.getName(), childFolder, data, sheet, listAll);  
+  }
+};
