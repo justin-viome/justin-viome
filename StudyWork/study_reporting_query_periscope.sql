@@ -17,7 +17,7 @@ stoolkitsamples as (
 	from study_info.study_participant sp
 	join study_info.participant p on p.participant_id=sp.participant_id  
 	join "KIT" k on k."userId"=p.user_id
-	join kit_type kt on kt.id = k.kit_type_id and k.kit_type_id=1 -- 1=GI
+	join kit_type kt on kt.id = k.kit_type_id --and k.kit_type_id=1 -- 1=GI
 	where k.kit_status_id=10 and (k.updated <= sp.start_time) and ((k.updated + INTERVAL '14 day') >= sp.start_time)
 	group by sp.study_id
 ),
@@ -41,16 +41,24 @@ qanda_sif as (
 	left join study_info.response a on a.feature_id=sf.feature_id and a.study_id=sf.study_id
 	group by sf.study_id
 ),
--- below is responsible for 6.4s/6.9s of overall run time 5-4-22 
-qanda_answers as(
-	select isf.study_id, count(distinct f.question_id) as Questions_a, count(distinct a.id) as Answers_a
-	from "ANSWER" a 
+-- try getting answer count by counting distinct answer values by study,user,question
+-- responsible for 8s/8.6s of run
+userdistinctanswers as (
+	SELECT 
+	sp.study_id, a."userId" as user_id, a."questionId" as question_id, count(distinct a.answer) as answerCount
+	from "ANSWER" a
 	join study_info.feature f on a."questionId"=f.question_id
 	join study_info.intervention_study_feature isf on isf.feature_id=f.feature_id
 	join study_info.study_participant sp on isf.study_id=sp.study_id
 	join study_info.participant p on p.participant_id=sp.participant_id and p.user_id=a."userId"
-	group by isf.study_id
+	group by sp.study_id, a."userId", a."questionId"
 ),
+qanda_answers as
+( 
+		select study_id, count(distinct question_id) as Questions_a, sum(answerCount) as Answers_a
+	from userdistinctanswers uda
+	group by study_id
+), 
 baseinfo as (
 select s.study_id, s.name, s.description, count(distinct sp.participant_id) as Participants
 from study_info.study s

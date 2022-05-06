@@ -190,6 +190,40 @@ where a.row_number=1
 group by a.study_id
 order by 3 desc;
 
+-- try getting answer count by counting distinct answer values by study,user,question
+with userdistinctanswers as (
+	SELECT 
+	sp.study_id, a."userId" as user_id, a."questionId" as question_id, count(distinct a.answer) as answerCount
+	from "ANSWER" a
+	join study_info.feature f on a."questionId"=f.question_id
+	join study_info.intervention_study_feature isf on isf.feature_id=f.feature_id
+	join study_info.study_participant sp on isf.study_id=sp.study_id
+	join study_info.participant p on p.participant_id=sp.participant_id and p.user_id=a."userId"
+	group by sp.study_id, a."userId", a."questionId"
+) select study_id, count(distinct question_id) as Questions_a, sum(answerCount) as Answers_a
+from userdistinctanswers uda
+group by study_id
+order by 2;
+
+-- try getting answer count by counting distinct answer values by study,user,question
+with userdistinctanswers as (
+	SELECT 
+	sp.study_id, a."userId" as user_id, a."questionId" as question_id, count(distinct a.answer) as answerCount
+	from "ANSWER" a
+	join study_info.feature f on a."questionId"=f.question_id
+	join study_info.intervention_study_feature isf on isf.feature_id=f.feature_id
+	join study_info.study_participant sp on isf.study_id=sp.study_id
+	join study_info.participant p on p.participant_id=sp.participant_id and p.user_id=a."userId"
+	group by sp.study_id, a."userId", a."questionId"
+)
+, qanda_ans as
+( 
+		select study_id, count(distinct question_id) as Questions_a, sum(answerCount) as Answers_a
+	from userdistinctanswers uda
+	group by study_id
+) select * from qanda_ans
+
+		
 -- query to highlight write problem with ANSWER table 
 select a."userId", a."questionId", count(distinct a."id") as answers
 from "ANSWER" a 
