@@ -55,17 +55,17 @@ userdistinctanswers as (
 ),
 qanda_answers as
 ( 
-		select study_id, count(distinct question_id) as Questions_a, sum(answerCount) as Answers_a
+	select study_id, count(distinct question_id) as Questions_a, sum(answerCount) as Answers_a
 	from userdistinctanswers uda
 	group by study_id
 ), 
 baseinfo as (
-select s.study_id, s.name, s.description, count(distinct sp.participant_id) as Participants
-from study_info.study s
-left join notifications nt on nt.study_id=s.study_id
-left join study_info.study_participant sp on s.study_id=sp.study_id
-left join studsamples samp on samp.study_id=s.study_id
-group by s.study_id
+	select s.study_id, s.name, s.description, count(distinct sp.participant_id) as Participants
+	from study_info.study s
+	left join notifications nt on nt.study_id=s.study_id
+	left join study_info.study_participant sp on s.study_id=sp.study_id
+	left join studsamples samp on samp.study_id=s.study_id
+	group by s.study_id
 ) 
 
 select s.study_id, s.name, s.description, 
