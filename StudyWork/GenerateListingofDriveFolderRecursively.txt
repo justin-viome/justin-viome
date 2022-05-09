@@ -1,6 +1,7 @@
 /**
  * justin.thomson@viome.com 
  * Google Apps Script - List all files & folders in a Google Drive folder, & write into a speadsheet.
+ * Output spreadsheet is named "V Studies Listing"
  *    - Main function 1: List all folders
  *    - Main function 2: List all files & folders
  * 
@@ -37,12 +38,13 @@ function getFolderTree(folderId, listAll) {
     var parentFolder = DriveApp.getFolderById(folderId);
     
     // Initialise the sheet
-    var file, data, sheet = SpreadsheetApp.getActiveSheet();
-    sheet.clear();
+    var dt = Utilities.formatDate(new Date(), "GMT+5", "MMM-dd-yyyy"); 
+    var fileName = "V Studies Listing " + dt.toString();
+    var file, data, sheet = SpreadsheetApp.create(fileName);
+    
     sheet.appendRow(["Path", "File Name", "Created", "Last Updated", "Size(MB)","Type", "URL"]);
 
     // Get files and folders
-
     // ignore intial folder name for output
     getChildFolders("", parentFolder, data, sheet, listAll);
     
