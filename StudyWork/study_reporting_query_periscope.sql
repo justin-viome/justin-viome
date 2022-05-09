@@ -42,7 +42,7 @@ qanda_sif as (
 	group by sf.study_id
 ),
 -- try getting answer count by counting distinct answer values by study,user,question
--- responsible for 8s/8.6s of run
+-- responsible for 8s of run
 userdistinctanswers as (
 	SELECT 
 	sp.study_id, a."userId" as user_id, a."questionId" as question_id, count(distinct a.answer) as answerCount
@@ -59,6 +59,21 @@ qanda_answers as
 	from userdistinctanswers uda
 	group by study_id
 ), 
+-- responsible for 9s of run 
+v150results as 
+(
+	select 15 as study_id, 
+		count(distinct gi_record_id) as Participants,
+		count (distinct gi_sample_id) as StoolSamp,
+		count(distinct viome_received_quest_sample_id) as BloodSamp,
+		count (distinct si_sample_id) as SalivaSamp
+	from 
+	(
+		select * from v150_samples_time_1 
+		union select * from v150_samples_time_2 
+		union select * from v150_samples_time_3 
+	) x
+),
 baseinfo as (
 	select s.study_id, s.name, s.description, count(distinct sp.participant_id) as Participants
 	from study_info.study s
@@ -70,10 +85,10 @@ baseinfo as (
 
 select s.study_id, s.name, s.description, 
 	coalesce(nt.Users_Contacted,0) as Users_Contacted,
-	s.Participants,
-	(coalesce(samp.Stool_Samples, 0) + coalesce(sampstool.StoolCount, 0)) as Stool_Samples, 
-	coalesce(samp.Blood_Samples, 0) as Blood_Samples,
-	coalesce(samp.Saliva_Samples,0) as Saliva_Samples,
+	s.Participants + coalesce(v150.Participants, 0) as Participants,
+	(coalesce(samp.Stool_Samples, 0) + coalesce(sampstool.StoolCount, 0) + coalesce(v150.StoolSamp, 0)) as Stool_Samples, 
+	(coalesce(samp.Blood_Samples, 0)+ coalesce(v150.BloodSamp, 0)) as Blood_Samples,
+	(coalesce(samp.Saliva_Samples,0) + coalesce(v150.SalivaSamp, 0)) as Saliva_Samples,
 	(coalesce(q.Questions_sif, 0) + coalesce(q2.Questions_a, 0)) as Questions, 
 	(coalesce(q.Answers_sif, 0) + coalesce(q2.Answers_a, 0)) as Answers
 from baseinfo s
@@ -82,4 +97,5 @@ left join studsamples samp on samp.study_id=s.study_id
 left join stoolkitsamples sampstool on sampstool.study_id=s.study_id
 left join qanda_sif q on q.study_id=s.study_id
 left join qanda_answers q2 on q2.study_id=s.study_id
+left join v150results v150 on v150.study_id= s.study_id
 order by s.study_id asc;

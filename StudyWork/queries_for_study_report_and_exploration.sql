@@ -230,3 +230,38 @@ from "ANSWER" a
 group by a."userId", a."questionId"
 having count(distinct a."id") > 100
 order by 3 desc;
+
+select * from v150_samples_time_2
+
+-- get similar data using v150 views 
+select 15 as study_id, 
+
+with v150t1 as 
+(
+	select 15 as study_id, 
+		count(distinct gi_record_id) as Participants,
+		count (distinct gi_sample_id) as StoolSamp,
+		count(distinct viome_received_quest_sample_id) as BloodSamp,
+		count (distinct si_sample_id) as SalivaSamp
+	from v150_samples_time_1 v1
+),
+with v150t2 as 
+(
+	select 15 as study_id, 
+		count(distinct gi_record_id) as Participants,
+		count (distinct gi_sample_id) as StoolSamp,
+		count(distinct viome_received_quest_sample_id) as BloodSamp,
+		count (distinct si_sample_id) as SalivaSamp
+	from v150_samples_time_2 v2
+),
+with v150t3 as 
+(
+	select 15 as study_id, 
+		count(distinct gi_record_id) as Participants,
+		count (distinct gi_sample_id) as StoolSamp,
+		count(distinct viome_received_quest_sample_id) as BloodSamp,
+		count (distinct si_sample_id) as SalivaSamp
+	from v150_samples_time_3 v3
+)
+
+
