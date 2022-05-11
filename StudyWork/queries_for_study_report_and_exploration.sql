@@ -264,4 +264,69 @@ with v150t3 as
 	from v150_samples_time_3 v3
 )
 
+-- 9.2sto return all. fastest approach.
+select * from v150_samples_time_1 -- 3.5
+union select * from v150_samples_time_2 -- 3.5
+union select * from v150_samples_time_3 -- 3.4
 
+with v150results as 
+(
+	select 15 as study_id, 
+		count(distinct gi_record_id) as Participants,
+		count (distinct gi_sample_id) as StoolSamp,
+		count(distinct viome_received_quest_sample_id) as BloodSamp,
+		count (distinct si_sample_id) as SalivaSamp
+	from 
+	(
+		select * from v150_samples_time_1 
+		union select * from v150_samples_time_2 
+		union select * from v150_samples_time_3 
+	) x
+)
+select * from v150results;
+
+select count(*) from study_info.castor_structured_record csr
+join study_info.castor_study_structure css on csr.castor_study_id=css.castor_study_id
+where css.study_id=15;
+
+-- get list of 92 participant castor record_ids
+-- get comma-delimited list of strings for qanda v150 query
+select distinct string_agg(distinct gi_record_id::text, ''',''') as record_id 	
+from 
+(
+	select * from v150_samples_time_1 
+	union select * from v150_samples_time_2 
+	union select * from v150_samples_time_3 
+) x
+where gi_record_id is not null;
+	
+	
+-- try to get questions and answers through direct querying
+
+WITH survey_json AS 
+( 
+       SELECT record_id, 
+              Jsonb_array_elements(data -> 'Surveys') AS survey_data 
+       FROM   study_info.castor_structured_record 
+       WHERE  record_id in ('1','100234','100345','100421','100502','100504','100508','100516','100519','100535','100540','100543','100552','100557','100562','100572','100592','100593','100607','100610','100611','100637','100648','100657','100659','100665','100719','100762','100779','100806','100807','100812','100817','100818','100833','100845','100857','100878','100891','100906','100912','100943','100950','100957','100959','100990','101006','101013','101042','101068','101083','101117','101124','101137','101154','101155','101171','101234','101242','101251','101275','101298','101314','101331','101383','101403','101407','101478','101486','101492','101500','101518','101541','101551','101578','101621','101646','101713','101897','101911','102008','110338','110351','200017','200026','200056','200086','200126','200141','3150018','4150034','4150211'))
+, survey AS 
+( 
+         SELECT   record_id, 
+                  -1 + row_number() over (ORDER BY ( 
+                         SELECT 0))             AS survey_instance, 
+                  survey_data ->> 'Survey Name' AS survey_name, 
+                  survey_data 
+         FROM     survey_json 
+         WHERE    survey_data ->> 'Survey Name' = 'V150 Primary Eligibility Survey'), field_json AS 
+( 
+       SELECT record_id, 
+              survey_instance, 
+              survey_name, 
+              jsonb_array_elements(jsonb_array_elements(survey_data -> 'Steps') -> 'Fields') AS field_data 
+       FROM   survey) 
+SELECT record_id, 
+       survey_instance, 
+       survey_name, 
+       x.* 
+FROM   field_json, 
+       jsonb_to_record(field_data) AS x(label text, variable_name text, value text, updated_on timestamp);
