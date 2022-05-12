@@ -110,9 +110,9 @@ field_json AS
        FROM   survey
 ), v150qa AS
 (
-	select 15 as study_id, count(*) as Questions_v150, sum(case when value is null then 0 else 1 end) as Answers_v150
+	select 15 as study_id, count(distinct label) as Questions_v150, sum(case when value is null then 0 else 1 end) as Answers_v150
 	FROM   field_json, 
-	       jsonb_to_record(field_data) AS x( value text)
+	       jsonb_to_record(field_data) AS x( value text, label text)
 )
 select s.study_id, s.name, s.description, 
 	coalesce(nt.Users_Contacted,0) as Users_Contacted,
