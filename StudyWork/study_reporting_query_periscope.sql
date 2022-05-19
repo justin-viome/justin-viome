@@ -130,4 +130,5 @@ left join qanda_sif q on q.study_id=s.study_id
 left join qanda_answers q2 on q2.study_id=s.study_id
 left join v150results v150 on v150.study_id= s.study_id
 left join v150qa on v150qa.study_id=s.study_id
+where s.study_id not in (2, 16) -- v126, Viome Coaching 
 order by s.study_id asc;
