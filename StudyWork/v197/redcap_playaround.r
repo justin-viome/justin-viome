@@ -9,7 +9,7 @@ uri <- "https://redcap.vanderbilt.edu/api/"
 
 # test redcapr library 
 # return completely flattened view of fields across forms 
-#v197out=redcap_read_oneshot(redcap_uri = uri, token = mytoken)
+# v197out=redcap_read_oneshot(redcap_uri = uri, token = mytoken)
 # could get list of forms, then call this for each form, saving each .csv file separately
 
 # direct calls to REDCap API to get ODM
