@@ -113,7 +113,17 @@ field_json AS
 	select 15 as study_id, count(distinct label) as Questions_v150, sum(case when value is null then 0 else 1 end) as Answers_v150
 	FROM   field_json, 
 	       jsonb_to_record(field_data) AS x( value text, label text)
+), v109p3 AS
+(
+select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Population - pilot' as description, 0,50, 50,50,50, 26,1199
+), v109p4 AS
+(
+select null::bigint as studyid, 'v109.4', 'GRM Validation for Japanese Population - extended study' as description, 0,500, 500,500,500,28,12662
+), v112 AS
+(
+select null::bigint as studyid, 'v112', 'Depression/IBS Study with UCLA' as description, 0,240, 0,0,0,48,11219
 )
+
 select s.study_id, s.name, s.description, 
 	coalesce(nt.Users_Contacted,0) as Users_Contacted,
 	s.Participants + coalesce(v150.Participants, 0) as Participants,
@@ -131,4 +141,10 @@ left join qanda_answers q2 on q2.study_id=s.study_id
 left join v150results v150 on v150.study_id= s.study_id
 left join v150qa on v150qa.study_id=s.study_id
 where s.study_id not in (2, 16) -- v126, Viome Coaching 
-order by s.study_id asc;
+--order by s.study_id asc
+
+union select * from v109p3
+union select * from v109p4
+union select * from v112
+order by 1 asc
+

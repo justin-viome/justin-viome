@@ -39,3 +39,10 @@ b3Count = countAnswers(b3q)
 print(paste0("total answers for 109.4: ", b1Count+b2Count+b3Count))
 #12662
 
+
+#v112 has 240 participants, 48 questions with 11219 answers 
+q112 = read.csv("/Users/justin/Downloads/v112_data.csv")
+answerCount112 = sum(!is.na(q112[2:nrow(q112), 2:ncol(q112)]))
+print(answerCount112)
+
+
