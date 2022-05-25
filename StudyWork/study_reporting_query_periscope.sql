@@ -126,7 +126,7 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	28,12662
 ), v112 AS
 (
-select null::bigint as studyid, 'v112', 'Depression/IBS Study with UCLA' as description, 0,240, 0,0,0,48,11219
+select null::bigint as studyid, 'v112', 'Depression/IBS Study with UCLA' as description, 0,240,240,0,0,48,11219
 )
 
 select s.study_id, s.name, s.description, 
