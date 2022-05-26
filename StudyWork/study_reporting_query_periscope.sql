@@ -2,6 +2,7 @@
 -- one study reporting query to rule them all
 
 -- 0 should be displayed in all cases including when no references are available in a DB table 
+-- results include studies not included in study_info.study
 
 
 with notifications as (
