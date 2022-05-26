@@ -133,29 +133,30 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	select null::bigint as studyid, 'v128.1', 'Oral Cancer Study with the University of Queensland Australia' as description, 0,335, 0,0,
 	335, -- saliva
 	12,2369
+), outty as 
+(
+	select s.study_id, s.name, s.description, 
+		coalesce(nt.Users_Contacted,0) as Users_Contacted_Via_App,
+		s.Participants + coalesce(v150.Participants, 0) as Participants,
+		(coalesce(samp.Stool_Samples, 0) + coalesce(sampstool.StoolCount, 0) + coalesce(v150.StoolSamp, 0)) as Stool_Samples, 
+		(coalesce(samp.Blood_Samples, 0)+ coalesce(v150.BloodSamp, 0)) as Blood_Samples,
+		(coalesce(samp.Saliva_Samples,0) + coalesce(v150.SalivaSamp, 0)) as Saliva_Samples,
+		(coalesce(q.Questions_sif, 0) + coalesce(q2.Questions_a, 0) + coalesce(v150qa.Questions_v150,0)) as Questions, 
+		(coalesce(q.Answers_sif, 0) + coalesce(q2.Answers_a, 0) + coalesce(v150qa.Answers_v150, 0)) as Answers
+	from baseinfo s
+	left join notifications nt on nt.study_id=s.study_id
+	left join studsamples samp on samp.study_id=s.study_id
+	left join stoolkitsamples sampstool on sampstool.study_id=s.study_id
+	left join qanda_sif q on q.study_id=s.study_id
+	left join qanda_answers q2 on q2.study_id=s.study_id
+	left join v150results v150 on v150.study_id= s.study_id
+	left join v150qa on v150qa.study_id=s.study_id
+	where s.study_id not in (2, 16) -- v126, Viome Coaching 
+	
+	union select * from v109p3
+	union select * from v109p4
+	union select * from v112
+	union select * from v128p1
+	order by 1 asc
 )
-
-select s.study_id, s.name, s.description, 
-	coalesce(nt.Users_Contacted,0) as Users_Contacted_Via_App,
-	s.Participants + coalesce(v150.Participants, 0) as Participants,
-	(coalesce(samp.Stool_Samples, 0) + coalesce(sampstool.StoolCount, 0) + coalesce(v150.StoolSamp, 0)) as Stool_Samples, 
-	(coalesce(samp.Blood_Samples, 0)+ coalesce(v150.BloodSamp, 0)) as Blood_Samples,
-	(coalesce(samp.Saliva_Samples,0) + coalesce(v150.SalivaSamp, 0)) as Saliva_Samples,
-	(coalesce(q.Questions_sif, 0) + coalesce(q2.Questions_a, 0) + coalesce(v150qa.Questions_v150,0)) as Questions, 
-	(coalesce(q.Answers_sif, 0) + coalesce(q2.Answers_a, 0) + coalesce(v150qa.Answers_v150, 0)) as Answers
-from baseinfo s
-left join notifications nt on nt.study_id=s.study_id
-left join studsamples samp on samp.study_id=s.study_id
-left join stoolkitsamples sampstool on sampstool.study_id=s.study_id
-left join qanda_sif q on q.study_id=s.study_id
-left join qanda_answers q2 on q2.study_id=s.study_id
-left join v150results v150 on v150.study_id= s.study_id
-left join v150qa on v150qa.study_id=s.study_id
-where s.study_id not in (2, 16) -- v126, Viome Coaching 
-
-union select * from v109p3
-union select * from v109p4
-union select * from v112
-union select * from v128p1
-order by 1 asc;
-
+select name, description, participants, stool_samples, blood_samples, saliva_samples, questions, answers, users_contacted_via_app, study_id from outty;
