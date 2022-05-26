@@ -159,4 +159,5 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	union select * from v128p1
 	order by 1 asc
 )
-select name, description, participants, stool_samples, blood_samples, saliva_samples, questions, answers, users_contacted_via_app, study_id from outty;
+select name, description, participants, stool_samples, blood_samples, saliva_samples, questions, answers, users_contacted_via_app, study_id from outty
+order by name asc;
