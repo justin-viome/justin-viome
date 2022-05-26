@@ -126,11 +126,16 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	28,12662
 ), v112 AS
 (
-select null::bigint as studyid, 'v112', 'Depression/IBS Study with UCLA' as description, 0,240,240,0,0,48,11219
+	select null::bigint as studyid, 'v112', 'Depression/IBS Study with UCLA' as description, 0,240,240,0,0,48,11219
+), v128p1 AS
+(
+	select null::bigint as studyid, 'v128.1', 'Oral Cancer Study with the University of Queensland Australia' as description, 0,335, 0,0,
+	335, -- saliva
+	12,2369
 )
 
 select s.study_id, s.name, s.description, 
-	coalesce(nt.Users_Contacted,0) as Users_Contacted,
+	coalesce(nt.Users_Contacted,0) as Users_Contacted_Via_App,
 	s.Participants + coalesce(v150.Participants, 0) as Participants,
 	(coalesce(samp.Stool_Samples, 0) + coalesce(sampstool.StoolCount, 0) + coalesce(v150.StoolSamp, 0)) as Stool_Samples, 
 	(coalesce(samp.Blood_Samples, 0)+ coalesce(v150.BloodSamp, 0)) as Blood_Samples,
@@ -150,5 +155,6 @@ where s.study_id not in (2, 16) -- v126, Viome Coaching
 union select * from v109p3
 union select * from v109p4
 union select * from v112
+union select * from v128p1
 order by 1 asc;
 

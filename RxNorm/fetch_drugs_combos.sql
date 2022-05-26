@@ -3,6 +3,36 @@
 -- get RxNorm data for CN, Engineering teams
 -- need to map drugs->ATC codes->contraindications/more for recommendation engine
 
+
+-- generate full list of drugname+ATCs including brand names and generics 
+-- https://viomeinc.atlassian.net/browse/VRX-21
+with d as (
+	select distinct rxcui, STR from RXNCONSO where sab = 'RXNORM'
+),
+a as (
+	select rxcui, CODE, STR from RXNCONSO where sab = 'ATC'
+),
+generics as (
+	select distinct a.STR drug, a.ATC
+	from RXNREL r 
+	join d on d.rxcui = r.rxcui1 
+	join a on a.rxcui = r.rxcui2 and RELA = 'has_tradename'
+), brands as (
+	select distinct d.STR drug, a.ATC
+	from RXNREL r 
+	join d on d.rxcui = r.rxcui1 
+	join a on a.rxcui = r.rxcui2 and RELA = 'has_tradename'
+),
+alldrugs as (
+	select * from generics
+	union 
+	select * from brands 
+)
+select replace(replace(drug, ',', '-'), '"', '''') as drug, ATC 
+from alldrugs
+order by drug asc;
+
+
 -- generate full list of generic+brand names for engineering 
 -- replace commas in data with semicolons
 with d as (
