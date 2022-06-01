@@ -133,6 +133,11 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	select null::bigint as studyid, 'v128.1', 'Oral Cancer Study with the University of Queensland Australia' as description, 0,335, 0,0,
 	335, -- saliva
 	12,2369
+), v128p234 AS
+(
+	select null::bigint as studyid, 'v128.234', 'Oral Cancer - US Controls through EDC and Viome Online' as description, 0,1175, 0,0,
+	1175, -- saliva
+	0,0
 ), outty as 
 (
 	select s.study_id, s.name, s.description, 
@@ -151,7 +156,8 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	left join qanda_answers q2 on q2.study_id=s.study_id
 	left join v150results v150 on v150.study_id= s.study_id
 	left join v150qa on v150qa.study_id=s.study_id
-	where s.study_id not in (2, 16) -- v126, Viome Coaching 
+	where s.study_id not in (2, 3, 12, 16) 
+	-- exclude v126, v112 sans data, v128-Pilot in study_info, Viome Coaching 
 	
 	union select * from v109p3
 	union select * from v109p4
