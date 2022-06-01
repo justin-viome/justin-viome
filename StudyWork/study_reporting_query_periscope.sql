@@ -135,8 +135,9 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	12,2369
 ), v128p234 AS
 (
-	select null::bigint as studyid, 'v128.234', 'Oral Cancer - US Controls through EDC and Viome Online' as description, 0,1175, 0,0,
-	1175, -- saliva
+	select null::bigint as studyid, 'v128.234', 'Oral Cancer - US Controls through EDC and Viome Online' as description, 0,873, -- 873 patients. 1175 in Tunji's model set-302 from 128.1 
+	0,0,
+	873, -- saliva
 	0,0
 ), outty as 
 (
@@ -156,6 +157,7 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	left join qanda_answers q2 on q2.study_id=s.study_id
 	left join v150results v150 on v150.study_id= s.study_id
 	left join v150qa on v150qa.study_id=s.study_id
+	
 	where s.study_id not in (2, 3, 12, 16) 
 	-- exclude v126, v112 sans data, v128-Pilot in study_info, Viome Coaching 
 	
@@ -163,6 +165,7 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	union select * from v109p4
 	union select * from v112
 	union select * from v128p1
+	union select * from v128p234
 	order by 1 asc
 )
 select name, description, participants, stool_samples, blood_samples, saliva_samples, questions, answers, users_contacted_via_app, study_id from outty
