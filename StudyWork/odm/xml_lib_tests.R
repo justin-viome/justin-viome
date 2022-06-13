@@ -3,10 +3,17 @@ library(arrow)
 library(aws.s3)
 library(xml2)
 library(xml2relational)
-library(ODM2R)
+#library(ODM2R)
 library(XML)
 library(flatxml)
 library(xmlconvert)
+
+
+#load environment context if github-hidden file exists
+if (file.exists("/users/justin/git/justin-viome/set_env.R")) {
+  source("/users/justin/git/justin-viome/set_env.R")
+}
+
 
 fetchXmlFromAWS = function(bucket = "viome-studies", study,
                            file) {
@@ -28,7 +35,7 @@ writeStudyParquet = function(xmldf, bucket = "viome-studes", study) {
 testOdm2R = function() {
   
   testFile = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
-  x=ODM2R(ODMfile=testFile)
+  # x=ODM2R(ODMfile=testFile)
   # output: massive R file
 }
 
@@ -55,6 +62,28 @@ testXmlConvert = function() {
   
   # fails with subscript out of bounds
   convx = xmlconvert::xml_to_df(file=testFile, records.tags = "ItemData")
+}
+
+testXmlSchemaValidate = function() {
+  
+  testFile = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
+  testSchema="/Users/justin/Downloads/odm1_3_2/ODM1-3-2-foundation.xsd"
+  doc <- read_xml(testFile, package = "xml2")
+  schema <- read_xml(testSchema, package = "xml2")
+  
+  
+  # result: failure.
+  # "Element '{http://www.cdisc.org/ns/odm/v1.3}CodeList': This element is not expected. Expected is ( {http://www.cdisc.org/ns/odm/v1.3}MethodDef )."
+  xml_validate(doc, schema)
+  
+}
+
+testOdmCompare = function() {
+  
+  testFile1 = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
+  testFile2 = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
+  
+  #compareodm library removed from CRAN due to unreachable maintainer
 }
 
 # Find node name: xxx

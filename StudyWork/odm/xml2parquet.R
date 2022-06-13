@@ -9,7 +9,7 @@ get.df <- function(l, table.name) {
 
 # check.all: Unique ID across all tables or only in relation to current table?
 # table.name: Table for which ID is generated
-# TODO: this could be updated to use GUIDs
+# TODO: this could be updated to use GUIDs or ints for IDs 
 create.id <- function(l, table.name, check.all = TRUE, prefix.primary = "ID_", keys.dim = 6) {
   id <- NULL
   df.index <- get.df(l, table.name)
@@ -52,14 +52,25 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
         id.value <- create.id(envir$ldf, obj.name, keys.unique, prefix.primary)
         envir$ldf[[length(envir$ldf)]][1,id.name] <- id.value
         
-        # iterate through attribiutes and add new column to dataframe if necessary
-        parseAttributesForNode(parent)
+        # iterate through attributes and add new column to dataframe if necessary
+        parseAttributesForNode(parent, df)
         attrs = xmlAttrs(parent)
       } else {
         
       }
     }
   }
+}
+
+parseAttributesForNode = function(node, df) {
+
+      attrs=xml_attrs(node)
+      for (i in 1:length(attrs)) {
+        #add column names to data frame for missing attributes 
+        if(!names(attrs[i]) %in% colnames(df)) {
+          df
+        }
+      }
 }
 
 toRelational <- function(file, prefix.primary = "ID_", prefix.foreign = "FKID_", keys.unique = TRUE, keys.dim = 6) {
