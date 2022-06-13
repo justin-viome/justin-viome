@@ -47,6 +47,18 @@ with field_data as (
        FROM   study_info.castor_structured_record 
        WHERE  record_id in (SELECT record_id FROM study_info.castor_structured_record WHERE castor_study_id ='9BB99EB3-8221-45DB-83B1-3BA4195606C2')
 ),
- with field_data_table as (
-  select record_id, field_data ->>'variable_name' as field, field_data->>'value' as value  from field_data
+field_data_table as (
+  select record_id, field_data ->>'variable_name' as field, field_data->>'value' as value from field_data
 )
+SELECT
+    record_id,
+    MAX(value) FILTER (WHERE field = 'screen_eligibility') AS "screen_eligibility",
+    MAX(value) FILTER (WHERE field = 'saliva_collection_date1') AS "saliva_collection_date1",
+    MAX(value) FILTER (WHERE field = 'labss_date_collection') AS "labss_date_collection",
+    MAX(value) FILTER (WHERE field = 'nymc_oc_status') AS "nymc_oc_status",
+    MAX(value) FILTER (WHERE field = 'nymc_oc_type') AS "nymc_oc_type",
+    MAX(value) FILTER (WHERE field = 'nymc_oc_hpv') AS "nymc_oc_hpv"
+FROM field_data_table
+GROUP BY record_id;
+
+    
