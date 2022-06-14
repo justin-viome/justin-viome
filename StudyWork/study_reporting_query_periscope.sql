@@ -82,38 +82,9 @@ baseinfo as (
 	left join study_info.study_participant sp on s.study_id=sp.study_id
 	left join studsamples samp on samp.study_id=s.study_id
 	group by s.study_id
-), 	
--- get all questions and answers for v150
-survey_json AS 
-( 
-       SELECT record_id, 
-              Jsonb_array_elements(data -> 'Surveys') AS survey_data 
-       FROM   study_info.castor_structured_record 
-       WHERE  record_id in ('1','100234','100345','100421','100502','100504','100508','100516','100519','100535','100540','100543','100552','100557','100562','100572','100592','100593','100607','100610','100611','100637','100648','100657','100659','100665','100719','100762','100779','100806','100807','100812','100817','100818','100833','100845','100857','100878','100891','100906','100912','100943','100950','100957','100959','100990','101006','101013','101042','101068','101083','101117','101124','101137','101154','101155','101171','101234','101242','101251','101275','101298','101314','101331','101383','101403','101407','101478','101486','101492','101500','101518','101541','101551','101578','101621','101646','101713','101897','101911','102008','110338','110351','200017','200026','200056','200086','200126','200141','3150018','4150034','4150211'))
-, 
-survey AS 
-( 
-         SELECT   record_id, 
-                  -1 + row_number() over (ORDER BY ( 
-                         SELECT 0))             AS survey_instance, 
-                  survey_data ->> 'Survey Name' AS survey_name, 
-                  survey_data 
-         FROM     survey_json 
-         --WHERE    (survey_data ->> 'Survey Name' = 'V150 Primary Eligibility Survey') or 
-         --	(survey_data ->>'Survey Name' = 'V150 Health Survey')
-), 
-field_json AS 
-( 
-       SELECT record_id, 
-              survey_instance, 
-              survey_name, 
-              jsonb_array_elements(jsonb_array_elements(survey_data -> 'Steps') -> 'Fields') AS field_data 
-       FROM   survey
-), v150qa AS
+), v150final AS
 (
-	select 15 as study_id, count(distinct label) as Questions_v150, sum(case when value is null then 0 else 1 end) as Answers_v150
-	FROM   field_json, 
-	       jsonb_to_record(field_data) AS x( value text, label text)
+	select 15 as study_id, 'v150', 'Microbiome in AxSpA disease activity' as description, 0, 94,149,150,148,78,7279
 ), v109p3 AS
 (
 select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Population - pilot' as description, 0,50, 50,50,50, 26,1199
@@ -143,29 +114,28 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 (
 	select s.study_id, s.name, s.description, 
 		coalesce(nt.Users_Contacted,0) as Users_Contacted_Via_App,
-		s.Participants + coalesce(v150.Participants, 0) as Participants,
-		(coalesce(samp.Stool_Samples, 0) + coalesce(sampstool.StoolCount, 0) + coalesce(v150.StoolSamp, 0)) as Stool_Samples, 
-		(coalesce(samp.Blood_Samples, 0)+ coalesce(v150.BloodSamp, 0)) as Blood_Samples,
-		(coalesce(samp.Saliva_Samples,0) + coalesce(v150.SalivaSamp, 0)) as Saliva_Samples,
-		(coalesce(q.Questions_sif, 0) + coalesce(q2.Questions_a, 0) + coalesce(v150qa.Questions_v150,0)) as Questions, 
-		(coalesce(q.Answers_sif, 0) + coalesce(q2.Answers_a, 0) + coalesce(v150qa.Answers_v150, 0)) as Answers
+		s.Participants as Participants,
+		(coalesce(samp.Stool_Samples, 0) + coalesce(sampstool.StoolCount, 0)) as Stool_Samples, 
+		(coalesce(samp.Blood_Samples, 0)) as Blood_Samples,
+		(coalesce(samp.Saliva_Samples,0)) as Saliva_Samples,
+		(coalesce(q.Questions_sif, 0) + coalesce(q2.Questions_a, 0)) as Questions, 
+		(coalesce(q.Answers_sif, 0) + coalesce(q2.Answers_a, 0)) as Answers
 	from baseinfo s
 	left join notifications nt on nt.study_id=s.study_id
 	left join studsamples samp on samp.study_id=s.study_id
 	left join stoolkitsamples sampstool on sampstool.study_id=s.study_id
 	left join qanda_sif q on q.study_id=s.study_id
 	left join qanda_answers q2 on q2.study_id=s.study_id
-	left join v150results v150 on v150.study_id= s.study_id
-	left join v150qa on v150qa.study_id=s.study_id
 	
-	where s.study_id not in (2, 3, 12, 16) 
-	-- exclude v126, v112 sans data, v128-Pilot in study_info, Viome Coaching 
+	where s.study_id not in (2, 3, 12, 15, 16) 
+	-- exclude v126, v112 sans data, v128-Pilot in study_info, v150 due to hardcoding for read speed, Viome Coaching 
 	
 	union select * from v109p3
 	union select * from v109p4
 	union select * from v112
 	union select * from v128p1
 	union select * from v128p234
+	union select * from v150final
 	order by 1 asc
 )
 select name, description, participants, stool_samples, blood_samples, saliva_samples, questions, answers, users_contacted_via_app, study_id from outty
