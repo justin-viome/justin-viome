@@ -110,6 +110,25 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	0,0,
 	873, -- saliva
 	0,0
+), 
+v300_field_data as (
+	SELECT record_id, 
+              jsonb_array_elements(jsonb_array_elements(jsonb_array_elements(data -> 'Phases')-> 'Steps')->'Fields') AS field_data 
+       FROM   study_info.castor_structured_record 
+       WHERE  record_id in (SELECT record_id FROM study_info.castor_structured_record WHERE castor_study_id ='9BB99EB3-8221-45DB-83B1-3BA4195606C2')
+),
+v300_field_data_table as (
+  select record_id, field_data ->>'variable_name' as field, field_data->>'value' as value from v300_field_data
+), 
+v300 AS 
+(
+	select 19 as study_id, 'v300', 'Study with NYMC to validate our Oral Cancer detection test' as description,
+	0, -- users contacted via app
+	count(distinct v.record_id) as participants, 
+	0,0,0,
+	count(distinct v.field) as questions, -- questions
+	count(distinct v.value) as answers -- answers 
+	from v300_field_data_table v
 ), outty as 
 (
 	select s.study_id, s.name, s.description, 
@@ -127,8 +146,8 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	left join qanda_sif q on q.study_id=s.study_id
 	left join qanda_answers q2 on q2.study_id=s.study_id
 	
-	where s.study_id not in (2, 3, 12, 15, 16) 
-	-- exclude v126, v112 sans data, v128-Pilot in study_info, v150 due to hardcoding for read speed, Viome Coaching 
+	where s.study_id not in (2, 3, 12, 15, 16, 19) 
+	-- exclude v126, v112 sans data, v128-Pilot in study_info, v150 due to hardcoding for read speed, Viome Coaching, v300 due to other logic to include parsed JSON
 	
 	union select * from v109p3
 	union select * from v109p4
@@ -136,6 +155,7 @@ select null::bigint as studyid, 'v109.3', 'GRM Validation for Japanese Populatio
 	union select * from v128p1
 	union select * from v128p234
 	union select * from v150final
+	union select * from v300
 	order by 1 asc
 )
 select name, description, participants, stool_samples, blood_samples, saliva_samples, questions, answers, users_contacted_via_app, study_id from outty
