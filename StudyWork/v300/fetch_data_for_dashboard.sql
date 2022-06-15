@@ -4,6 +4,57 @@
 --v300 is castor_study_id ='9BB99EB3-8221-45DB-83B1-3BA4195606C2' is study_id=19.
 
 
+
+/*
+Derived OPMD variable Needs to be coded from lesions as follows,
+If,
+Dysplasia
+Hyperplasia
+Leukoplakia
+Erythroplasia
+Lichenoid lesions
+Actinic Keratosis
+Lichenoid reaction, 
+AND 
+nymc_oc_status= negative 
+OPMD-M
+
+If,
+Dysplasia
+Hyperplasia
+Leukoplakia
+Erythroplasia
+Lichenoid lesions
+Actinic Keratosis
+Lichenoid reaction, 
+AND 
+nymc_oc_status= positive
+OC-OPMD-M
+ 
+If,
+Aphthous ulcer/ Canker Sores
+Gingival enlargement (side 
+effect)
+Lichen planus
+Keratosis
+Inflammatory reaction
+Cheek bites, 
+AND 
+nymc_oc_status= negative 
+OPMD-B
+
+If,
+Aphthous ulcer/ Canker Sores
+Gingival enlargement (side effect)
+Lichen planus
+Keratosis
+Inflammatory reaction
+Cheek bites, 
+AND 
+nymc_oc_status= positive 
+OC-OPMD-B
+*/
+
 with field_data as (
 	SELECT record_id, 
               jsonb_array_elements(jsonb_array_elements(jsonb_array_elements(data -> 'Phases')-> 'Steps')->'Fields') AS field_data 
@@ -27,8 +78,10 @@ FROM field_data_table
 GROUP BY record_id
 )
 select record_id as "Castor Patient ID", screen_eligibility as "Screen Eligibility", saliva_collection_date1 as "Date of Saliva Collection", labss_date_collection as "Date Saliva Sample Received", nymc_oc_status as "Oral/Throat Cancer Status", nymc_oc_type as "Type of Oral Cancer", 
-case when (nymc_oc_status='Positive' AND lesions in ('test')) then '' else '' end as "OPMD",
+case when (nymc_oc_status='Negative' AND lesions in ('Dysplasia','Hyperplasia','Erythroplakia (abnormal red lesions in your mouth)','Lichenoid lesions','Actinic Keratosis')) then 'OPMD-M' 
+	when (nymc_oc_status='Positive' AND lesions in ('Dysplasia','Hyperplasia','Erythroplakia (abnormal red lesions in your mouth)','Lichenoid lesions','Actinic Keratosis')) then 'OC-OPMD-M' 
+	else '' end as "OPMD",
 nymc_oc_hpv as "HPV Status"
 from subject_report
 order by 1;
-    
+

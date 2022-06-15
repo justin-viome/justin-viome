@@ -30,6 +30,7 @@
 #'@name xml2relational
 
 library(xml2)
+library(arrow)
 
 
 get.df <- function(l, table.name) {
@@ -112,8 +113,9 @@ serial.xml <- function(obj) {
         names(serial)[NROW(serial)] <- paste0(xml2::xml_name(obj), "@", xml2::xml_name(chdr[i]))
       }
     }
+    return(serial[order(names(serial))])
   }
-  return(serial[order(names(serial))])
+  #return(serial[order(names(serial))])
 }
 
 
@@ -148,7 +150,7 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
     obj.name <- xml2::xml_name(parent)
     chdr <- xml2::xml_children(parent)
     # Does parent have children, i.e. is parent an object?
-    if(length(chdr) > 0) {
+    if(TRUE) { #if(length(chdr) > 0) {
       elem <- get.df(envir$ldf, obj.name)
       # Is there no dataframe for the parent?
       if(is.null(elem)) {
@@ -167,16 +169,18 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
           # hack for strange r issue where names(xml_attrs(parent)) returns NULL
           
           if (is.null(names(xa))) {
-            ddf = as.data.frame(xa)
-            envir$ldf[[length(envir$ldf)]][1, rownames(ddf)[j]] = xa[j]
+            ddf = t(as.data.frame(xa))
+            envir$ldf[[length(envir$ldf)]][1, colnames(ddf)[j]] = ddf[j]
           } else {
             envir$ldf[[length(envir$ldf)]][1, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
           }
         }
         
-        for(i in 1:length(chdr)) {
-          if(length(xml2::xml_children(chdr[i])) > 0) envir$ldf[[get.df(envir$ldf, obj.name)]][1, paste0(prefix.foreign, xml2::xml_name(chdr[i]))] <- parseXMLNode(chdr[i], envir, FALSE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$value
-          else envir$ldf[[get.df(envir$ldf, obj.name)]][1, xml2::xml_name(chdr[i])] <- parseXMLNode(chdr[i], envir, FALSE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$value
+        if(length(chdr) > 0) {
+          for(i in 1:length(chdr)) {
+            if(length(xml2::xml_children(chdr[i])) > 0) envir$ldf[[get.df(envir$ldf, obj.name)]][1, paste0(prefix.foreign, xml2::xml_name(chdr[i]))] <- parseXMLNode(chdr[i], envir, FALSE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$value
+            else envir$ldf[[get.df(envir$ldf, obj.name)]][1, xml2::xml_name(chdr[i])] <- parseXMLNode(chdr[i], envir, FALSE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$value
+          }
         }
         return(list(ldf=envir$ldf, value=id.value))
       }
@@ -196,16 +200,18 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
             # hack for strange r issue where names(xml_attrs(parent)) returns NULL
             
             if (is.null(names(xa))) {
-              ddf = as.data.frame(xa)
-              envir$ldf[[length(envir$ldf)]][1, rownames(ddf)[j]] = xa[j]
+              ddf = t(as.data.frame(xa))
+              envir$ldf[[length(envir$ldf)]][new.index, colnames(ddf)[j]] = ddf[j]
             } else {
-              envir$ldf[[length(envir$ldf)]][1, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
+              envir$ldf[[length(envir$ldf)]][new.index, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
             }
           }
           
-          for(i in 1:length(chdr)) {
-            if(length(xml2::xml_children(chdr[i])) > 0) envir$ldf[[get.df(envir$ldf, obj.name)]][new.index, paste0(prefix.foreign, xml2::xml_name(chdr[i]))] <- parseXMLNode(chdr[i], envir, FALSE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$value
-            else envir$ldf[[get.df(envir$ldf, obj.name)]][new.index, xml2::xml_name(chdr[i])] <- parseXMLNode(chdr[i], envir, FALSE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$value
+          if(length(chdr) > 0) {
+            for(i in 1:length(chdr)) {
+              if(length(xml2::xml_children(chdr[i])) > 0) envir$ldf[[get.df(envir$ldf, obj.name)]][new.index, paste0(prefix.foreign, xml2::xml_name(chdr[i]))] <- parseXMLNode(chdr[i], envir, FALSE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$value
+              else envir$ldf[[get.df(envir$ldf, obj.name)]][new.index, xml2::xml_name(chdr[i])] <- parseXMLNode(chdr[i], envir, FALSE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$value
+            }
           }
           return(list(ldf=envir$ldf, value=id.value))
         }
@@ -218,11 +224,13 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
       res <- as.character(xml2::xml_contents(parent))
       
       xa = xml_attrs(parent)
+      
+      # TODO: add new index logic for leaf nodes with attributes
       for (j in 1:length(xml_attrs(parent))) {
         # hack for strange r issue where names(xml_attrs(parent)) returns NULL
         if (is.null(names(xa))) {
-          ddf = as.data.frame(xa)
-          envir$ldf[[length(envir$ldf)]][1, rownames(ddf)[j]] = xa[j]
+          ddf = t(as.data.frame(xa))
+          envir$ldf[[length(envir$ldf)]][1, colnames(ddf)[j]] = ddf[j]
         } else {
           envir$ldf[[length(envir$ldf)]][1, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
         }
@@ -736,7 +744,7 @@ getInsertSQL <- function(ldf, table.name, line.break = "\n", one.statement = FAL
 #' @return No return vaue.
 #'
 #' @examples
-#' # Find path to custmers.xml example file in package directory
+#' # Find path to customers.xml example file in package directory
 #' path <- system.file("", "customers.xml", package = "xml2relational")
 #' db <- toRelational(path)
 #'
@@ -760,9 +768,32 @@ savetofiles <- function(ldf, dir, sep = ",", dec = ".") {
   }
 }
 
+writeParquetToS3 = function(s3folderpath, xml2relout) {
+  for (i in 1:length(xml2relout)) {
+    df = as.data.frame(xml2relout[i])
+    dfName = names(xml2relout)[i]
+    outFileName = paste0(s3folderpath, dfName)
+    print(paste0("writing dataframe ", dfName, " to ", outFileName))
+    write_parquet(x=df, sink=outFileName)
+  }
+}
+
+initializeAWS = function() {
+  #load environment context if github-hidden file exists
+  if (file.exists("/users/justin/git/justin-viome/set_env.R")) {
+    source("/users/justin/git/justin-viome/set_env.R")
+  }
+}
 test = function() {
+  initializeAWS()
+  
   source("/Users/justin/git/justin-viome/StudyWork/odm/xml2relationaljt.R")
   odmfile= "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
   smallFile = "/Users/justin/Downloads/attribtest1.xml"
+  
+  
   t = toRelational(file = smallFile)
+  
+  s3testfolder = "s3://justin-viome/parquettest/v128/"
+  writeParquetToS3(s3folderpath=s3testfolder, xml2relout= t)
 }
