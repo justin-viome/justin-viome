@@ -148,6 +148,9 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
   }
   else {
     obj.name <- xml2::xml_name(parent)
+    if (obj.name=='ItemData') {
+      return 
+    }
     chdr <- xml2::xml_children(parent)
     # Does parent have children, i.e. is parent an object?
     if(TRUE) { #if(length(chdr) > 0) {
@@ -155,6 +158,7 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
       # Is there no dataframe for the parent?
       if(is.null(elem)) {
         # Create new dataframe
+        print(paste0(Sys.time(), ": adding table for element type: ", obj.name))
         envir$ldf[[length(envir$ldf)+1]] <- data.frame()
         names(envir$ldf)[length(envir$ldf)] <- obj.name
         
@@ -165,13 +169,13 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
         envir$ldf[[length(envir$ldf)]][1,id.name] <- id.value
         
         xa = xml_attrs(parent)
-        for (j in 1:length(xml_attrs(parent))) {
-          # hack for strange r issue where names(xml_attrs(parent)) returns NULL
-          
-          if (is.null(names(xa))) {
-            ddf = t(as.data.frame(xa))
-            envir$ldf[[length(envir$ldf)]][1, colnames(ddf)[j]] = ddf[j]
-          } else {
+        if (is.null(names(xa))) {
+          ddf = t(as.data.frame(xa))
+          for (a in 1:length(colnames(ddf))) {
+            envir$ldf[[length(envir$ldf)]][1, colnames(ddf)[a]] = ddf[a]
+          }
+        } else {
+          for (j in 1:length(xa)) {
             envir$ldf[[length(envir$ldf)]][1, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
           }
         }
@@ -196,13 +200,16 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
           envir$ldf[[elem]][new.index,id.name] <- id.value
           
           xa = xml_attrs(parent)
-          for (j in 1:length(xml_attrs(parent))) {
-            # hack for strange r issue where names(xml_attrs(parent)) returns NULL
-            
-            if (is.null(names(xa))) {
-              ddf = t(as.data.frame(xa))
-              envir$ldf[[length(envir$ldf)]][new.index, colnames(ddf)[j]] = ddf[j]
-            } else {
+          
+          # hack for strange r issue where names(xml_attrs(parent)) returns NULL
+          # TODO: need to fix bug where all properties are not being set because of wrong loop j 
+          if (is.null(names(xa))) {
+            ddf = t(as.data.frame(xa))
+            for (a in 1:length(colnames(ddf))) {
+              envir$ldf[[length(envir$ldf)]][new.index, colnames(ddf)[a]] = ddf[a]
+            }
+          } else {
+            for (j in 1:length(xa)) {
               envir$ldf[[length(envir$ldf)]][new.index, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
             }
           }
@@ -226,16 +233,22 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
       xa = xml_attrs(parent)
       
       # TODO: add new index logic for leaf nodes with attributes
-      for (j in 1:length(xml_attrs(parent))) {
-        # hack for strange r issue where names(xml_attrs(parent)) returns NULL
-        if (is.null(names(xa))) {
-          ddf = t(as.data.frame(xa))
-          envir$ldf[[length(envir$ldf)]][1, colnames(ddf)[j]] = ddf[j]
-        } else {
-          envir$ldf[[length(envir$ldf)]][1, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
+      
+      id.name <- paste0(prefix.primary, obj.name)
+      id.value <- create.id(envir$ldf, obj.name, TRUE, prefix.primary, keys.dim)
+      new.index <- NROW(envir$ldf[[elem]]) + 1
+      envir$ldf[[elem]][new.index,id.name] <- id.value
+      
+      if (is.null(names(xa))) {
+        ddf = t(as.data.frame(xa))
+        for (a in 1:length(colnames(ddf))) {
+          envir$ldf[[length(envir$ldf)]][new.index, colnames(ddf)[a]] = ddf[a]
+        }
+      } else {
+        for (j in 1:length(xa)) {
+          envir$ldf[[length(envir$ldf)]][new.index, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
         }
       }
-      
       if(length(res) > 0) return(list(ldf=envir$ldf, value=res))
       else return(list(ldf=envir$ldf, value=NA))
     }
@@ -342,6 +355,7 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
 toRelational <- function(file, prefix.primary = "ID_", prefix.foreign = "FKID_", keys.unique = TRUE, keys.dim = 6) {
   x <- xml2::read_xml(file)
   p <- xml2::xml_root(x)
+  print(paste0(Sys.time(), ": calling parseXMLNode from the top"))
   return(parseXMLNode(p, NULL, TRUE, prefix.primary, prefix.foreign, keys.unique, keys.dim)$ldf)
 }
 
@@ -773,8 +787,11 @@ writeParquetToS3 = function(s3folderpath, xml2relout) {
     df = as.data.frame(xml2relout[i])
     dfName = names(xml2relout)[i]
     outFileName = paste0(s3folderpath, dfName)
-    print(paste0("writing dataframe ", dfName, " to ", outFileName))
-    write_parquet(x=df, sink=outFileName)
+    print(paste0(Sys.time(), ": writing dataframe ", dfName, " to ", outFileName))
+    write_dataset(dataset=df, path=outFileName, format='parquet')
+      
+    # aws glue did not recognize any data rows from this call 
+    #write_parquet(x=df, sink=outFileName, )
   }
 }
 
@@ -784,16 +801,20 @@ initializeAWS = function() {
     source("/users/justin/git/justin-viome/set_env.R")
   }
 }
-test = function() {
+testParseNWrite = function() {
   initializeAWS()
   
   source("/Users/justin/git/justin-viome/StudyWork/odm/xml2relationaljt.R")
   odmfile= "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
-  smallFile = "/Users/justin/Downloads/attribtest1.xml"
+  smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
   
   
-  t = toRelational(file = smallFile)
+  t = toRelational(file = smallrealFile)
   
   s3testfolder = "s3://justin-viome/parquettest/v128/"
-  writeParquetToS3(s3folderpath=s3testfolder, xml2relout= t)
+  writeParquetToS3(s3folderpath=s3testfolder, xml2relout= t, )
 }
+
+
+
+
