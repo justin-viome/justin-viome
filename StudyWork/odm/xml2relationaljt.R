@@ -786,7 +786,7 @@ writeParquetToS3 = function(s3folderpath, xml2relout) {
   for (i in 1:length(xml2relout)) {
     df = as.data.frame(xml2relout[i])
     dfName = names(xml2relout)[i]
-    outFileName = paste0(s3folderpath, dfName)
+    outFileName = paste0(s3folderpath, dfName,"/")
     print(paste0(Sys.time(), ": writing dataframe ", dfName, " to ", outFileName))
     write_dataset(dataset=df, path=outFileName, format='parquet')
       
@@ -812,9 +812,21 @@ testParseNWrite = function() {
   t = toRelational(file = smallrealFile)
   
   s3testfolder = "s3://justin-viome/parquettest/v128/"
-  writeParquetToS3(s3folderpath=s3testfolder, xml2relout= t, )
+  writeParquetToS3(s3folderpath=s3testfolder, xml2relout= t)
 }
 
+testReadParquet = function() {
+  s3testread = "s3://justin-viome/parquettest/v128/ItemData"
+  
+  dfin = read_parquet(file=s3testread)
+  
+}
+
+testSampleDataset = function() {
+  id1=t$ItemDef
+  
+  
+}
 
 
 
