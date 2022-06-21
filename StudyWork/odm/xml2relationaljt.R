@@ -208,9 +208,13 @@ parseXMLNode <- function(parent, envir, first = FALSE, prefix.primary, prefix.fo
             for (a in 1:length(colnames(ddf))) {
               envir$ldf[[length(envir$ldf)]][new.index, colnames(ddf)[a]] = ddf[a]
             }
+            # debug
+            if (obj.name=='ItemDef') {
+              notvary = NULL
+            }
           } else {
             for (j in 1:length(xa)) {
-              envir$ldf[[length(envir$ldf)]][new.index, names(xml_attrs(parent))[j]] = xml_attrs(parent)[j]
+              envir$ldf[[length(envir$ldf)]][new.index, names(xa)[j]] = xa[j]
             }
           }
           
@@ -824,6 +828,8 @@ testReadParquet = function() {
 
 testSampleDataset = function() {
   id1=t$ItemDef
+  
+  idsef=t$StudyEventDef
   
   
 }
