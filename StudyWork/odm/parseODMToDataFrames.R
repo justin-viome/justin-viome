@@ -1,8 +1,12 @@
 # justin.thomson@viome.com
+# poc for odm data lake 
+# parse odm file and create parquet tables in s3
+# one table should be created for each important odm element
 
 # create predefined dataframe structures that encompass all of ODM
 # populate them with data parsed from an ODM file
 # each data frame will have a pk and a fk to its parent, except the odm data frame
+# pk and fkids are simply row numbers 
 # each dataframe will denormalize the viomestudyname for downstream consumption 
 # lower case used for names due to parquet case sensitivity 
 # maintain referential integrity of data through the addition of PK and FK values for each table 
@@ -20,6 +24,8 @@
 library(xml2)
 library(arrow)
 
+
+########## global vars 
 odm = setNames(data.frame(matrix(ncol = 15, nrow = 0)), c("description", "filetype", "granularity", "archival", "fileoid", "creationdatetime", "priorfileoid",
                                                           "asofdatetime", "odmversion", "originator", "sourcesystem","sourcesystemversion",
                                                           "id", "xmlns","viomestudyname"))
@@ -70,13 +76,26 @@ formdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_formdata","fk_
 itemgroupdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemgroupdata","fk_formdata","itemgroupoid","itemgrouprepeatkey", "viomestudyname"))
 itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","fk_itemgroupdata","itemoid","value", "viomestudyname"))
 
-# hacky
+# hacky. The order of dfList and dfListNames have to be the same  
 # could create two lists one for metadata, one smaller one for data
 dfList = list(odm, study, metadataversion, protocol, studyeventref, studyeventdef, formref, formdef, itemgroupref, itemgroupdef, itemdef, question, externalquestion, 
               codelistref, codelist, codelistitem, clinicaldata, subjectdata, studyeventdata, formdata, itemgroupdata, itemdata)
-names(dfList)=c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref', 'itemgroupdef', 'itemdef', 
+#names(dfList)=
+dfListNames=c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref', 'itemgroupdef', 'itemdef', 
   'question', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata', 'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata')
 
+
+########## methods
+
+# gets dataframe that corresponds to given node 
+# dataframe returned is not named due to r weirdness
+getDataFrame = function(dfs = dfList, nodeName) {
+  if(nodeName %in% dfListNames) {
+    # use double brackets to get dataframe at correct location
+    return(dfs[[which(dfListNames==nodeName)]]) 
+  }
+  else return(NULL)
+}
 
 # read odm file from s3 
 readODMFromS3= function(s3bucket="viome-studies", s3FileLocation) {
@@ -105,21 +124,35 @@ ODMToDataFrames = function(xmlData) {
 # Log attributes (columns not in defined set)
 # 
 # Call VisitNode(...) for children
+
+# uses global variable for dfList for now
 visitNode = function(parentID, node) {
   elemName = xml_name(node)
-
-  if (is.null(parentID)) {
-    
+  nodedf = getDataFrame(nodeName='elemName')
+  # null returned when element is intentionally skipped
+  if (!is.null(nodedf)) {
+    newparentid=setAttributesForNode(parentID, nodename, node, nodedf)
+    chdr <- xml_children(node)
+    for(i in 1:length(chdr)) {
+      visitNode(newparentid,chdr[i])
+    }
   }
+}
+
+# set pk, set attributes, set fk
+setAttributesForNode = function(parentID, nodename, node, nodedf) {
   
+  # add row to df
+  newparentid = nrow(nodedf)+1
   
+  d[paste0("pk_", nodename) <- rbind(newparentid)
+  
+  attrs = xml_attrs(node)
+  for (i in 1:length(attrs)) {
+    if (name(attrs)[i] %in% names(nodedf)) {
+      
+    }
+  }
   
 }
 
-# gets dataframe that corresponds to given node 
-getDataFrame = function(dfs = dfList, nodeName) {
-  if(nodeName %in% names(dfs)) {
-    return(dfs[which(names(dfs)==nodeName)])
-  }
-  else return(NULL)
-}
