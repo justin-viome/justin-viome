@@ -3,11 +3,12 @@
 # create predefined dataframe structures that encompass all of ODM
 # populate them with data parsed from an ODM file
 # each data frame will have a pk and a fk to its parent, except the odm data frame
-# each dataframe will denormalize the viomestudyname for references
-# lower case used for naems due to parquet case sensitivity 
+# each dataframe will denormalize the viomestudyname for downstream consumption 
+# lower case used for names due to parquet case sensitivity 
 # maintain referential integrity of data through the addition of PK and FK values for each table 
-# generate parquet for each resulting dataframe and stored it in s3 
-# could sort each data frame before storage to improve parquet reads (use of parquet metadata)
+# generate parquet for each resulting dataframe and store in s3 
+
+# todo?: could sort each data frame before storage to improve parquet reads (use of parquet metadata)
 
 # considerations
 # some xml elements are used in many places in ODM, with many different parent element types. 
@@ -16,17 +17,8 @@
 
 # can also check for any variables with no values (all NA in R) and remove those columns in the output for efficiency
 
-library(tibble)
-viewXmlDetails = function () {
-  
-  largeFile="/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
-  xmlDoc = read_xml(largeFile)
-  xmlDoc %>% 
-    xml_find_all("//*") %>% 
-    purrr::map(~names(xml_attrs(.))) %>%
-    unlist() %>% 
-    unique()
-}
+library(xml2)
+library(arrow)
 
 odm = setNames(data.frame(matrix(ncol = 15, nrow = 0)), c("description", "filetype", "granularity", "archival", "fileoid", "creationdatetime", "priorfileoid",
                                                           "asofdatetime", "odmversion", "originator", "sourcesystem","sourcesystemversion",
@@ -68,7 +60,6 @@ codelistitem = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelistit
 # metadata:
 #odm, metadataversion, protocol, studyeventref, studyeventdef, formref, studyeventdef, formdef, itemgroupref, itemgroupdef, itemref, itemdef, question, codelistref,
 #codelist, codelistitem
-
 #clinical data:
 #clinicaldata,subjectdata, studyeventdata, formdata, itemgroupdata, itemdata
 
@@ -79,9 +70,13 @@ formdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_formdata","fk_
 itemgroupdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemgroupdata","fk_formdata","itemgroupoid","itemgrouprepeatkey", "viomestudyname"))
 itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","fk_itemgroupdata","itemoid","value", "viomestudyname"))
 
+# hacky
 # could create two lists one for metadata, one smaller one for data
 dfList = list(odm, study, metadataversion, protocol, studyeventref, studyeventdef, formref, formdef, itemgroupref, itemgroupdef, itemdef, question, externalquestion, 
               codelistref, codelist, codelistitem, clinicaldata, subjectdata, studyeventdata, formdata, itemgroupdata, itemdata)
+names(dfList)=c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref', 'itemgroupdef', 'itemdef', 
+  'question', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata', 'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata')
+
 
 # read odm file from s3 
 readODMFromS3= function(s3bucket="viome-studies", s3FileLocation) {
@@ -124,7 +119,7 @@ visitNode = function(parentID, node) {
 # gets dataframe that corresponds to given node 
 getDataFrame = function(dfs = dfList, nodeName) {
   if(nodeName %in% names(dfs)) {
-    return(which(names(l)==nodeName))
+    return(dfs[which(names(dfs)==nodeName)])
   }
   else return(NULL)
 }
