@@ -60,6 +60,10 @@ odmObj <- R6Class("obmObj",
     itemgroupdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemgroupdata","ItemGroupOID","itemgrouprepeatkey","fk_formdata", "viomestudyname")),
     itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","ItemOID","Value","fk_itemgroupdata", "viomestudyname")),
 
+    odmdfnames = c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref',
+                   'itemgroupdef', 'itemdef', 'question', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata',
+                   'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata'),
+
     studyname = '',
     xmlDoc = NULL,
     xmlRoot = NULL,
@@ -83,37 +87,36 @@ odmObj <- R6Class("obmObj",
 
       #only attempt to set values we care about via the dataframe definitions
       attrs = xml_attrs(node)
-      colNames = colnames(nodedf)
+      colNames = colnames(self[[nodename]])
       col.len = length(colNames)
 
       # skip first column, PK, 2nd-to-last last column, FK,a nd final column, viomestudyname
       for (i in 2:(col.len-2)) {
         col = colNames[i]
-        nodedf[newparentid, col]= xml_attr(x=node, attr = col)
+        self[[nodename]][newparentid, col]= xml_attr(x=node, attr = col)
       }
 
       #set fk. For now, fk is always the second-to-last column in a given data frame
       if (!is.null(parentID)) {
-        nodedf[newparentid, col.len-1]=parentID
+        self[[nodename]][newparentid, col.len-1]=parentID
       }
 
       # set studyname for all rows
-      nodedf[newparentid, col.len] = s_viomestudyname
+      self[[nodename]][newparentid, col.len] = s_viomestudyname
 
-      # return dataframe
-      nodedf
     },
 
     visitNode = function(parentID, node) {
       elemName = tolower(xml_name(node))
       if (length(elemName)==0) {
+        browse()
         debugx = 3 #debugging
       }
       print(paste0("elemname processing: ", elemName))
 
       # null returned when element is intentionally skipped
-      if (!is.null(nodedf)) {
-        nodedf=setAttributesForNode(parentID=parentID, nodename=elemName, node=node)
+      if (!is.null(self[[elemName]])) {
+        self$setAttributesForNode(parentID=parentID, nodename=elemName, node=node)
         newparentid=nrow(self[[elemName]])
         chdr <- xml_children(node)
         if(length(chdr) > 0) {
@@ -129,7 +132,19 @@ odmObj <- R6Class("obmObj",
     },
 
     parseODM = function() {
-      self$visitNode(NULL, xmlRoot)
-    }
+      self$visitNode(NULL, self$xmlRoot)
+    },
+
+    writeParquetToS3 = function(s3folderpath, bucketName="viome-studies") {
+
+      # iterate through list of objects and write each to s3 even if they are empty
+
+      outFileName = paste0("s3://", bucketName, s3folderpath, dfName)
+      print(paste0(Sys.time(), ": writing dataframe ", dfName, " to ", outFileName))
+      write_dataset(dataset=df, path=outFileName, format='parquet')
+
+      # aws glue did not recognize any data rows from this call
+      #write_parquet(x=df, sink=outFileName, )
+      }
   )
 )

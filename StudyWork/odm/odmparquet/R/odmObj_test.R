@@ -2,6 +2,8 @@
 
 
 library(assertthat)
+library(xml2)
+
 simpleTest = function() {
   smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
   xml = read_xml(smallrealFile)
@@ -16,7 +18,7 @@ simpleTest = function() {
 
 testParse = function () {
   smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
-
+  xml = read_xml(smallrealFile)
   initializeAWS()
   x = odmObj$new(studyname = 'testn', xmlDoc = xml)
 
