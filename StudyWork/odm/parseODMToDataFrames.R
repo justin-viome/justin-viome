@@ -34,47 +34,53 @@ library(arrow)
 #clinical data:
 #clinicaldata,subjectdata, studyeventdata, formdata, itemgroupdata, itemdata
 
-odm = setNames(data.frame(matrix(ncol = 16, nrow = 0)), c("pk_odm", "description", "filetype", "granularity", "archival", "fileoid", "creationdatetime", "priorfileoid",
-                                                          "asofdatetime", "odmversion", "originator", "sourcesystem","sourcesystemversion",
-                                                          "id", "xmlns","viomestudyname"))
-study = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_study", "oid", "fk_odm", "viomestudyname"))
-#globalVariables = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_globalvariables", "studyname", "studydescription", "protocolname", "fk_study", "viomestudyname"))
-metadataversion = setNames(data.frame(matrix(ncol = 10, nrow = 0)), c("pk_metadataversion", "oid", "version", "fk_study", "viomestudyname"))
+# add fk column second from the end for consistent setting logic
+
+
+# use datatables to allow for in-place changes.Dataframes do not.
+odm = setNames(data.frame(matrix(ncol = 17, nrow = 0)), c("pk_odm", "Description", "FileType", "Granularity", "Archival", "FileOID", "CreationDateTime", "PriorFileOID",
+                                                          "AsOfDateTime", "ODMVersion", "Originator", "SourceSystem","SourceSystemVersion",
+                                                          "ID", "xmlns", "fk_none", "viomestudyname"))
+study = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_study", "OID", "fk_odm", "viomestudyname"))
+#globalVariables = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_globalvariables", "studyname", "studyDescription", "protocolname", "fk_study", "viomestudyname"))
+metadataversion = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_metadataversion", "OID", "Version", "fk_study", "viomestudyname"))
 protocol= setNames(data.frame(matrix(ncol = 3, nrow = 0)), c("pk_protocol","fk_metadataversion", "viomestudyname"))
-studyeventref = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_studyeventref", "studyeventoid", "ordernumber", "mandatory", "fk_protocol", "viomestudyname"))
+studyeventref = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_studyeventref", "StudyEventOID", "OrderNumber", "Mandatory", "fk_protocol", "viomestudyname"))
 
-studyeventdef= setNames(data.frame(matrix(ncol = 7, nrow = 0)), c("pk_studyeventdef", "oid", "name", "repeating", "type", "fk_metadataversion", "viomestudyname"))
-formref = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_formref", "formoid", "mandatory", "fk_studyeventdef", "viomestudyname"))
+studyeventdef= setNames(data.frame(matrix(ncol = 7, nrow = 0)), c("pk_studyeventdef", "OID", "Name", "Repeating", "Type", "fk_metadataversion", "viomestudyname"))
+formref = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_formref", "FormOID", "Mandatory", "fk_studyeventdef", "viomestudyname"))
 
-formdef = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_formdef", "oid", "name", "repeating", "fk_metadataversion", "viomestudyname"))
-itemgroupref= setNames(data.frame(matrix(ncol = 7, nrow = 0)), c("pk_itemgroupref", "itemgroupoid", "ordernumber", "mandatory", "collectionexceptionconditionoid", "fk_formdef", "viomestudyname"))
+formdef = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_formdef", "OID", "Name", "Repeating", "fk_metadataversion", "viomestudyname"))
+itemgroupref= setNames(data.frame(matrix(ncol = 7, nrow = 0)), c("pk_itemgroupref", "itemgroupOID", "OrderNumber", "Mandatory", "CollectionExceptionConditionOID", "fk_formdef", "viomestudyname"))
 
-itemgroupdef = setNames(data.frame(matrix(ncol = 13, nrow = 0)), c("pk_itemgroupdef", "oid", "name", "repeating", "isreferencedata", "sasdatasetname", "domain", "origin", "role", "purpose", "comment","fk_metadataversion", "viomestudyname"))
-itemref = setNames(data.frame(matrix(ncol = 11, nrow = 0)), c("pk_itemref","itemoid","ordernumber","mandatory","keysequence","methodoid","role","rolecodelistoid","collectionexceptionconditionoid","fk_itemgroupdef", "viomestudyname"))
+itemgroupdef = setNames(data.frame(matrix(ncol = 11, nrow = 0)), c("pk_itemgroupdef", "OID", "Name", "Repeating", "Domain", "Origin", "Role", "Purpose", "Comment","fk_metadataversion", "viomestudyname"))
+itemref = setNames(data.frame(matrix(ncol = 11, nrow = 0)), c("pk_itemref","ItemOID","OrderNumber","Mandatory","KeySequence","MethodOID","Role","RoleCodeListOID","CollectionExceptionConditionOID","fk_itemgroupdef", "viomestudyname"))
 
-itemdef = setNames(data.frame(matrix(ncol = 12, nrow = 0)), c("pk_itemdef","oid","name","datatype","length","significantdigits","sasfieldname","sdsvarname","origin","comment","fk_metadataversion", "viomestudyname"))
-question = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_question", "value", "xml:lang", "fk_itemdef", "viomestudyname"))
-externalquestion = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_externalquestion", "dictionary", "version", "code", "fk_itemdef", "viomestudyname"))
-codelistref = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_codelistref", "codelistoid", "fk_itemdef", "viomestudyname"))
-#rangecheck = setNames(data.frame(matrix(ncol = 3, nrow = 0)), c("pk_rangecheck", "comparator", "softhard", "fk_itemdef", "viomestudyname"))
+itemdef = setNames(data.frame(matrix(ncol = 10, nrow = 0)), c("pk_itemdef","OID","Name","DataType","Length","SignificantDigits","Origin","Comment","fk_metadataversion", "viomestudyname"))
 
-#methoddef = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_methoddef","oid", "name", "fk_metadataversion", "viomestudyname"))
+# todo: fetch english value from translatedtext
+question = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_question", "Value", "fk_itemdef", "viomestudyname"))
+externalquestion = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_externalquestion", "Dictionary", "Version", "Code", "fk_itemdef", "viomestudyname"))
+codelistref = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_codelistref", "CodeListOID", "fk_itemdef", "viomestudyname"))
+#rangecheck = setNames(data.frame(matrix(ncol = 3, nrow = 0)), c("pk_rangecheck", "Comparator", "SoftHard", "fk_itemdef", "viomestudyname"))
+
+# methoddef = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_methoddef","OID", "Name", "fk_metadataversion", "viomestudyname"))
 # basicDefinitions = setNames(data.frame(matrix(ncol = 3, nrow = 0)), c("pk_basicdefinitions","fk_study", "viomestudyname"))
-# measurementUnit = studyDescription = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_measurementunit", "oid", "name","fk_basicdefinitions", "viomestudyname"))
+# measurementUnit = studyDescription = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_measurementunit", "OID", "Name","fk_basicdefinitions", "viomestudyname"))
 # symbol = setNames(data.frame(matrix(ncol = 10, nrow = 0)), c("pk_symbol","fk_measurementunit", "viomestudyname"))
 # translatedtext= setNames(data.frame(matrix(ncol = 10, nrow = 0)), c("pk_translatedtext", "xml:lang", "text","fk_", "viomestudyname"))
 
-codelist = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelist","oid","name","datatype", "fk_metadataversion", "viomestudyname"))
+codelist = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelist","OID","Name","DataType", "fk_metadataversion", "viomestudyname"))
 
-# should store value
-codelistitem = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelistitem","codedvalue", "rank", "ordernumber", "fk_codelist", "viomestudyname"))
+# todo: should store value
+codelistitem = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelistitem","CodedValue", "Rank", "OrderNumber", "fk_codelist", "viomestudyname"))
 
-clinicaldata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_clinicaldata","fk_odm","studyoid","metadataversionoid", "viomestudyname"))
-subjectdata = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_subjectdata","fk_clinicaldata","subjectkey", "viomestudyname"))
-studyeventdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_studyeventdata","fk_subjectdata","studyeventoid","studyeventrepeatkey", "viomestudyname"))
-formdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_formdata","fk_studyeventdata","formoid", "formrepeatkey", "viomestudyname"))
-itemgroupdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemgroupdata","fk_formdata","itemgroupoid","itemgrouprepeatkey", "viomestudyname"))
-itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","fk_itemgroupdata","itemoid","value", "viomestudyname"))
+clinicaldata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_clinicaldata","StudyOID","MetadataVersionOID", "fk_odm", "viomestudyname"))
+subjectdata = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_subjectdata","SubjectKey","fk_clinicaldata", "viomestudyname"))
+studyeventdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_studyeventdata","StudyEventOID","StudyEventRepeatKey","fk_subjectdata", "viomestudyname"))
+formdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_formdata","FormOID", "FormRepeatKey","fk_studyeventdata","viomestudyname"))
+itemgroupdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemgroupdata","ItemGroupOID","itemgrouprepeatkey","fk_formdata", "viomestudyname"))
+itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","ItemOID","Value","fk_itemgroupdata", "viomestudyname"))
 
 # hacky. The order of dfList and dfListNames have to be the same  
 # could create two lists one for metadata, one smaller one for data
@@ -140,15 +146,20 @@ ODMToDataFrames = function(xmlData) {
 # uses global variable for dfList for now
 visitNode = function(parentID, node) {
   elemName = tolower(xml_name(node))
+  if (length(elemName)==0) {
+    debugx = 3 #debugging
+  }
   print(paste0("elemname processing: ", elemName))
   nodedf = getDataFrame(nodeName=elemName)
   # null returned when element is intentionally skipped
   if (!is.null(nodedf)) {
-    newparentid=setAttributesForNode(parentID, nodename=elemName, node, nodedf)
+    newparentid=setAttributesForNode(parentID=parentID, nodename=elemName, node=node, nodedf=nodedf)
     chdr <- xml_children(node)
-    for(i in 1:length(chdr)) {
-      childnode= chdr[i]
-      visitNode(parentID=newparentid,node=childnode)
+    if(length(chdr) > 0) {
+      for(i in 1:length(chdr)) {
+        childnode= chdr[i]
+        visitNode(parentID=newparentid,node=childnode)
+      }
     }
   } else {
     print(paste0("Node dataframe not found for element: ", elemName))
@@ -158,31 +169,28 @@ visitNode = function(parentID, node) {
 # set pk, set attributes, set fk
 setAttributesForNode = function(parentID, nodename, node, nodedf) {
   
-  # add row to df
-  newparentid = nrow(nodedf)+1
-  
   #add row with nas then replace with values from input node
+  newparentid = nrow(nodedf)+1
   nodedf[newparentid, c(paste0("pk_", nodename))] <- newparentid
   
-  # xml_attrs is not returning 
+  #only attempt to set values we care about via the dataframe definitions
   attrs = xml_attrs(node)
-  for (i in 1:length(attrs)) {
-    attrname=tolower(names(attrs[i]))
-    if (attrname %in% names(nodedf)) {
-      nodedf[newparentid, attrname]=attrs[i]
-    } else {
-      print(paste0("Attribute ", attrname, " not found in dataframe ", nodename))
-    }
-  }
+  colNames = colnames(nodedf)
+  col.len = length(colNames)
   
-  collen=ncol(nodedf)
+  # skip first column, PK, 2nd-to-last last column, FK,a nd final column, viomestudyname
+  for (i in 2:(col.len-2)) {
+    col = colNames[i]
+    nodedf[newparentid, col]= xml_attr(x=node, attr = col)
+  }
   
   #set fk. For now, fk is always the second-to-last column in a given data frame 
   if (!is.null(parentID)) {
-    nodedf[newparentid, collen-1]=parentID
+    nodedf[newparentid, col.len-1]=parentID
   }
   
-  nodedf[newparentid, collen] = s_viomestudyname
+  # set studyname for all rows 
+  nodedf[newparentid, col.len] = s_viomestudyname
   
   # return newparentid for next call
   newparentid
@@ -201,5 +209,7 @@ testX = function () {
   
   elemName=tolower(xml_name(x))
   
-  t = ODMToDataFrames(x)
+  ODMToDataFrames(x)
 }
+
+t=testX()
