@@ -164,6 +164,7 @@ setAttributesForNode = function(parentID, nodename, node, nodedf) {
   #add row with nas then replace with values from input node
   nodedf[newparentid, c(paste0("pk_", nodename))] <- newparentid
   
+  # xml_attrs is not returning 
   attrs = xml_attrs(node)
   for (i in 1:length(attrs)) {
     attrname=tolower(names(attrs[i]))
