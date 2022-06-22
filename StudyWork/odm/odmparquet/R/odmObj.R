@@ -60,12 +60,76 @@ odmObj <- R6Class("obmObj",
     itemgroupdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemgroupdata","ItemGroupOID","itemgrouprepeatkey","fk_formdata", "viomestudyname")),
     itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","ItemOID","Value","fk_itemgroupdata", "viomestudyname")),
 
-    studyname='',
+    studyname = '',
+    xmlDoc = NULL,
+    xmlRoot = NULL,
 
-    initialize = function(studyname) {
+    initialize = function(studyname, xmlDoc) {
       stopifnot(!is.null(studyname))
       stopifnot(nchar(studyname) > 0)
       self$studyname=studyname
+
+      stopifnot(!is.null(xmlDoc))
+      self$xmlDoc = xmlDoc
+      self$xmlRoot = xml_root(self$xmlDoc)
+    },
+
+    # set pk, set attributes, set fk
+    setAttributesForNode = function(parentID, nodename, node) {
+
+      #add row with nas then replace with values from input node
+      newparentid = nrow(self[[nodename]])+1
+      self[[nodename]][newparentid, c(paste0("pk_", nodename))] <- newparentid
+
+      #only attempt to set values we care about via the dataframe definitions
+      attrs = xml_attrs(node)
+      colNames = colnames(nodedf)
+      col.len = length(colNames)
+
+      # skip first column, PK, 2nd-to-last last column, FK,a nd final column, viomestudyname
+      for (i in 2:(col.len-2)) {
+        col = colNames[i]
+        nodedf[newparentid, col]= xml_attr(x=node, attr = col)
+      }
+
+      #set fk. For now, fk is always the second-to-last column in a given data frame
+      if (!is.null(parentID)) {
+        nodedf[newparentid, col.len-1]=parentID
+      }
+
+      # set studyname for all rows
+      nodedf[newparentid, col.len] = s_viomestudyname
+
+      # return dataframe
+      nodedf
+    },
+
+    visitNode = function(parentID, node) {
+      elemName = tolower(xml_name(node))
+      if (length(elemName)==0) {
+        debugx = 3 #debugging
+      }
+      print(paste0("elemname processing: ", elemName))
+
+      # null returned when element is intentionally skipped
+      if (!is.null(nodedf)) {
+        nodedf=setAttributesForNode(parentID=parentID, nodename=elemName, node=node)
+        newparentid=nrow(self[[elemName]])
+        chdr <- xml_children(node)
+        if(length(chdr) > 0) {
+          for(i in 1:length(chdr)) {
+            childnode= chdr[i]
+            self$visitNode(parentID=newparentid,node=childnode)
+          }
+        }
+
+      } else {
+        print(paste0("Node dataframe not found for element: ", elemName))
+      }
+    },
+
+    parseODM = function() {
+      self$visitNode(NULL, xmlRoot)
     }
   )
 )
