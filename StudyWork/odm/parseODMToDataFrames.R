@@ -26,7 +26,15 @@ library(arrow)
 
 
 ########## global vars 
-odm = setNames(data.frame(matrix(ncol = 15, nrow = 0)), c("description", "filetype", "granularity", "archival", "fileoid", "creationdatetime", "priorfileoid",
+
+# for now, just store critical tables
+# metadata:
+#odm, metadataversion, protocol, studyeventref, studyeventdef, formref, studyeventdef, formdef, itemgroupref, itemgroupdef, itemref, itemdef, question, codelistref,
+#codelist, codelistitem
+#clinical data:
+#clinicaldata,subjectdata, studyeventdata, formdata, itemgroupdata, itemdata
+
+odm = setNames(data.frame(matrix(ncol = 16, nrow = 0)), c("pk_odm", "description", "filetype", "granularity", "archival", "fileoid", "creationdatetime", "priorfileoid",
                                                           "asofdatetime", "odmversion", "originator", "sourcesystem","sourcesystemversion",
                                                           "id", "xmlns","viomestudyname"))
 study = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_study", "oid", "fk_odm", "viomestudyname"))
@@ -61,14 +69,6 @@ codelist = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelist","oid
 # should store value
 codelistitem = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelistitem","codedvalue", "rank", "ordernumber", "fk_codelist", "viomestudyname"))
 
-
-# for now, just store critical tables
-# metadata:
-#odm, metadataversion, protocol, studyeventref, studyeventdef, formref, studyeventdef, formdef, itemgroupref, itemgroupdef, itemref, itemdef, question, codelistref,
-#codelist, codelistitem
-#clinical data:
-#clinicaldata,subjectdata, studyeventdata, formdata, itemgroupdata, itemdata
-
 clinicaldata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_clinicaldata","fk_odm","studyoid","metadataversionoid", "viomestudyname"))
 subjectdata = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_subjectdata","fk_clinicaldata","subjectkey", "viomestudyname"))
 studyeventdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_studyeventdata","fk_subjectdata","studyeventoid","studyeventrepeatkey", "viomestudyname"))
@@ -80,12 +80,23 @@ itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","fk_
 # could create two lists one for metadata, one smaller one for data
 dfList = list(odm, study, metadataversion, protocol, studyeventref, studyeventdef, formref, formdef, itemgroupref, itemgroupdef, itemdef, question, externalquestion, 
               codelistref, codelist, codelistitem, clinicaldata, subjectdata, studyeventdata, formdata, itemgroupdata, itemdata)
+
+# using separate variable for dataframe names due to r quirks. dataframe name is lost when list(dataframe) is called.
 #names(dfList)=
 dfListNames=c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref', 'itemgroupdef', 'itemdef', 
   'question', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata', 'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata')
 
+# create global var for studyname to avoid passing through to all calls 
+s_viomestudyname="v128.234"
 
 ########## methods
+
+initializeAWS = function() {
+  #load environment context if github-hidden file exists
+  if (file.exists("/users/justin/git/justin-viome/set_env.R")) {
+    source("/users/justin/git/justin-viome/set_env.R")
+  }
+}
 
 # gets dataframe that corresponds to given node 
 # dataframe returned is not named due to r weirdness
@@ -99,6 +110,7 @@ getDataFrame = function(dfs = dfList, nodeName) {
 
 # read odm file from s3 
 readODMFromS3= function(s3bucket="viome-studies", s3FileLocation) {
+  initializeAWS()
   out=s3read_using(FUN=read_xml, bucket = bucket, object = s3FileLocation)
   
   #TODO: handle errors such as invalid file format, or xml file that isn't ODM
@@ -108,9 +120,9 @@ readODMFromS3= function(s3bucket="viome-studies", s3FileLocation) {
 # generate list of dataframes for input ODM file
 # takes in xml file read via xml2::read_xml
 ODMToDataFrames = function(xmlData) {
-  xmlRoot <- xml2::xml_root(x)
-  print(paste0(Sys.time(), ": calling parseXMLNode from the top"))
-  dfs=VisitNode(xmlRoot)
+  xmlRoot <- xml_root(xmlData)
+  print(paste0(Sys.time(), ": calling visitNode from the top"))
+  dfs=visitNode(parentID=NULL, node=xmlRoot)
   
   dfs
 }
@@ -127,15 +139,19 @@ ODMToDataFrames = function(xmlData) {
 
 # uses global variable for dfList for now
 visitNode = function(parentID, node) {
-  elemName = xml_name(node)
-  nodedf = getDataFrame(nodeName='elemName')
+  elemName = tolower(xml_name(node))
+  print(paste0("elemname processing: ", elemName))
+  nodedf = getDataFrame(nodeName=elemName)
   # null returned when element is intentionally skipped
   if (!is.null(nodedf)) {
-    newparentid=setAttributesForNode(parentID, nodename, node, nodedf)
+    newparentid=setAttributesForNode(parentID, nodename=elemName, node, nodedf)
     chdr <- xml_children(node)
     for(i in 1:length(chdr)) {
-      visitNode(newparentid,chdr[i])
+      childnode= chdr[i]
+      visitNode(parentID=newparentid,node=childnode)
     }
+  } else {
+    print(paste0("Node dataframe not found for element: ", elemName))
   }
 }
 
@@ -145,14 +161,44 @@ setAttributesForNode = function(parentID, nodename, node, nodedf) {
   # add row to df
   newparentid = nrow(nodedf)+1
   
-  d[paste0("pk_", nodename) <- rbind(newparentid)
+  #add row with nas then replace with values from input node
+  nodedf[newparentid, c(paste0("pk_", nodename))] <- newparentid
   
   attrs = xml_attrs(node)
   for (i in 1:length(attrs)) {
-    if (name(attrs)[i] %in% names(nodedf)) {
-      
+    attrname=tolower(names(attrs[i]))
+    if (attrname %in% names(nodedf)) {
+      nodedf[newparentid, attrname]=attrs[i]
+    } else {
+      print(paste0("Attribute ", attrname, " not found in dataframe ", nodename))
     }
   }
   
+  collen=ncol(nodedf)
+  
+  #set fk. For now, fk is always the second-to-last column in a given data frame 
+  if (!is.null(parentID)) {
+    nodedf[newparentid, collen-1]=parentID
+  }
+  
+  nodedf[newparentid, collen] = s_viomestudyname
+  
+  # return newparentid for next call
+  newparentid
 }
 
+testX = function () {
+  nodedf=odm
+  nodename='odm'
+  parentID=NULL
+  
+  testFile=  odmfile= "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
+  smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
+  
+  initializeAWS()
+  x <- xml2::read_xml(smallrealFile)
+  
+  elemName=tolower(xml_name(x))
+  
+  t = ODMToDataFrames(x)
+}
