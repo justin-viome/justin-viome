@@ -88,9 +88,13 @@ dfList = list(odm, study, metadataversion, protocol, studyeventref, studyeventde
               codelistref, codelist, codelistitem, clinicaldata, subjectdata, studyeventdata, formdata, itemgroupdata, itemdata)
 
 # using separate variable for dataframe names due to r quirks. dataframe name is lost when list(dataframe) is called.
-#names(dfList)=
-dfListNames=c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref', 'itemgroupdef', 'itemdef', 
-  'question', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata', 'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata')
+names(dfList)=c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref', 'itemgroupdef', 'itemdef', 
+              'question', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata', 'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata')
+
+# create separate environment to manage data frames 
+# TODO: use r6 instead for cleaner approach 
+odmenv <- new.env(parent = baseenv())
+list2env(dfList2, envir = odmenv)
 
 # create global var for studyname to avoid passing through to all calls 
 s_viomestudyname="v128.234"
@@ -153,7 +157,8 @@ visitNode = function(parentID, node) {
   nodedf = getDataFrame(nodeName=elemName)
   # null returned when element is intentionally skipped
   if (!is.null(nodedf)) {
-    newparentid=setAttributesForNode(parentID=parentID, nodename=elemName, node=node, nodedf=nodedf)
+    nodedf=setAttributesForNode(parentID=parentID, nodename=elemName, node=node, nodedf=nodedf)
+    newparentid=nrow(nodedf)
     chdr <- xml_children(node)
     if(length(chdr) > 0) {
       for(i in 1:length(chdr)) {
@@ -161,6 +166,11 @@ visitNode = function(parentID, node) {
         visitNode(parentID=newparentid,node=childnode)
       }
     }
+    
+    # assign local dataframe to global variable at end of run
+    glb = get(x=elemName) 
+    glb <<- nodedf
+    
   } else {
     print(paste0("Node dataframe not found for element: ", elemName))
   }
@@ -192,8 +202,8 @@ setAttributesForNode = function(parentID, nodename, node, nodedf) {
   # set studyname for all rows 
   nodedf[newparentid, col.len] = s_viomestudyname
   
-  # return newparentid for next call
-  newparentid
+  # return dataframe
+  nodedf
 }
 
 testX = function () {
