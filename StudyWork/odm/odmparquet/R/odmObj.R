@@ -4,6 +4,8 @@
 # Separate environment is needed
 
 library(R6)
+library(arrow)
+library(xml2)
 
 # for now, just store critical tables
 # metadata:
@@ -112,7 +114,6 @@ odmObj <- R6Class("obmObj",
         browse()
         debugx = 3 #debugging
       }
-      print(paste0("elemname processing: ", elemName))
 
       # null returned when element is intentionally skipped
       if (!is.null(self[[elemName]])) {
@@ -127,24 +128,31 @@ odmObj <- R6Class("obmObj",
         }
 
       } else {
-        print(paste0("Node dataframe not found for element: ", elemName))
+        #log this in the future when logging introduced
+        #print(paste0("Node dataframe not found for element: ", elemName))
       }
     },
 
     parseODM = function() {
+      print(paste0(Sys.time(), ": beginning parseODM"))
       self$visitNode(NULL, self$xmlRoot)
+      print(paste0(Sys.time(), ": parseODM complete"))
     },
 
-    writeParquetToS3 = function(s3folderpath, bucketName="viome-studies") {
+    writeParquetToS3 = function(bucketName="viome-studies") {
 
+      print(paste0(Sys.time(), ": writeParquestToS3 started"))
+      basePath = paste0("s3://", bucketName, "/", self$studyname, "/ODMparquet/")
       # iterate through list of objects and write each to s3 even if they are empty
-
-      outFileName = paste0("s3://", bucketName, s3folderpath, dfName)
-      print(paste0(Sys.time(), ": writing dataframe ", dfName, " to ", outFileName))
-      write_dataset(dataset=df, path=outFileName, format='parquet')
-
-      # aws glue did not recognize any data rows from this call
-      #write_parquet(x=df, sink=outFileName, )
+      for (i in 1:length(self$odmdfnames)) {
+        elem = self$odmdfnames[i]
+        writePath = path=paste0(basePath, elem, "/")
+        print(paste0(Sys.time(), ": writing element ", elem, " to ", writePath))
+        write_dataset(dataset=self[[elem]],path = writePath, format='parquet')
       }
+      print(paste0(Sys.time(), ": writeParquestToS3 complete"))
+
+
+    }
   )
 )
