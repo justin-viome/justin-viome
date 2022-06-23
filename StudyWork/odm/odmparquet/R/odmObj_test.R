@@ -17,7 +17,7 @@ simpleTest = function() {
 }
 
 
-testParse = function () {
+testParseSmallFIle = function () {
   smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
   xml = read_xml(smallrealFile)
   initializeAWS()
@@ -35,4 +35,9 @@ testParseFullStudy = function() {
 
   x$parseODM()
   x$writeParquetToS3()
-}
+}s
+
+
+
+
+

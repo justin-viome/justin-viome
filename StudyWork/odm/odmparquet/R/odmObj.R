@@ -9,7 +9,7 @@ library(xml2)
 
 # for now, just store critical tables
 # metadata:
-#odm, metadataversion, protocol, studyeventref, studyeventdef, formref, studyeventdef, formdef, itemgroupref, itemgroupdef, itemref, itemdef, question, codelistref,
+#odm, metadataversion, protocol, studyeventref, studyeventdef, formref, studyeventdef, formdef, itemgroupref, itemgroupdef, itemref, itemdef, codelistref,
 #codelist, codelistitem
 #clinical data:
 #clinicaldata,subjectdata, studyeventdata, formdata, itemgroupdata, itemdata
@@ -36,10 +36,11 @@ odmObj <- R6Class("obmObj",
     itemgroupdef = setNames(data.frame(matrix(ncol = 11, nrow = 0)), c("pk_itemgroupdef", "OID", "Name", "Repeating", "Domain", "Origin", "Role", "Purpose", "Comment","fk_metadataversion", "viomestudyname")),
     itemref = setNames(data.frame(matrix(ncol = 11, nrow = 0)), c("pk_itemref","ItemOID","OrderNumber","Mandatory","KeySequence","MethodOID","Role","RoleCodeListOID","CollectionExceptionConditionOID","fk_itemgroupdef", "viomestudyname")),
 
-    itemdef = setNames(data.frame(matrix(ncol = 10, nrow = 0)), c("pk_itemdef","OID","Name","DataType","Length","SignificantDigits","Origin","Comment","fk_metadataversion", "viomestudyname")),
+    # special handling added for Label
+    itemdef = setNames(data.frame(matrix(ncol = 11, nrow = 0)), c("pk_itemdef","OID","Name","Label","DataType","Length","SignificantDigits","Origin","Comment","fk_metadataversion", "viomestudyname")),
 
     # todo: fetch english value from translatedtext
-    question = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_question", "Value", "fk_itemdef", "viomestudyname")),
+    #question = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_question", "Value", "fk_itemdef", "viomestudyname")),
     externalquestion = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_externalquestion", "Dictionary", "Version", "Code", "fk_itemdef", "viomestudyname")),
     codelistref = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_codelistref", "CodeListOID", "fk_itemdef", "viomestudyname")),
     #rangecheck = setNames(data.frame(matrix(ncol = 3, nrow = 0)), c("pk_rangecheck", "Comparator", "SoftHard", "fk_itemdef", "viomestudyname")),
@@ -50,10 +51,11 @@ odmObj <- R6Class("obmObj",
     # symbol = setNames(data.frame(matrix(ncol = 10, nrow = 0)), c("pk_symbol","fk_measurementunit", "viomestudyname")),
     # translatedtext= setNames(data.frame(matrix(ncol = 10, nrow = 0)), c("pk_translatedtext", "xml:lang", "text","fk_", "viomestudyname")),
 
-    codelist = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelist","OID","Name","DataType", "fk_metadataversion", "viomestudyname")),
+    #special handling added for description
+    codelist = setNames(data.frame(matrix(ncol = 7, nrow = 0)), c("pk_codelist","OID","Name", "Description", "DataType", "fk_metadataversion", "viomestudyname")),
 
-    # todo: should store value
-    codelistitem = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_codelistitem","CodedValue", "Rank", "OrderNumber", "fk_codelist", "viomestudyname")),
+    #special handling added for description
+    codelistitem = setNames(data.frame(matrix(ncol = 7, nrow = 0)), c("pk_codelistitem","CodedValue", "Description", "Rank", "OrderNumber", "fk_codelist", "viomestudyname")),
 
     clinicaldata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_clinicaldata","StudyOID","MetadataVersionOID", "fk_odm", "viomestudyname")),
     subjectdata = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_subjectdata","SubjectKey","fk_clinicaldata", "viomestudyname")),
@@ -92,7 +94,7 @@ odmObj <- R6Class("obmObj",
       colNames = colnames(self[[nodename]])
       col.len = length(colNames)
 
-      # skip first column, PK, 2nd-to-last last column, FK,a nd final column, viomestudyname
+      # skip first column, PK, 2nd-to-last last column, FK, and final column, viomestudyname
       for (i in 2:(col.len-2)) {
         col = colNames[i]
         self[[nodename]][newparentid, col]= xml_attr(x=node, attr = col)
@@ -106,12 +108,34 @@ odmObj <- R6Class("obmObj",
       # set studyname for all rows
       self[[nodename]][newparentid, col.len] = s_viomestudyname
 
+      # special case handling
+      # set itemdef label to be question value under description
+      if (nodename=='itemdef') {
+        # note: first value chosen if multiple translated text values exist for different xml:langs
+          lbl = xml_text(xml_child(x=(xml_child(x=node, search='Question')), search='TranslatedText'))
+          # TODO: debug
+          if (!is.na(lbl)) {
+            self[[nodename]][newparentid, 'Label']=lbl
+          }
+        } else if (nodename =='codelist') {
+          # note: first value chosen if multiple translated text values exist for different xml:langs
+          descr = xml_text(xml_child(x=(xml_child(x=node, search='Description')), search='TranslatedText'))
+          if (!is.na(lbl)) {
+            self[[nodename]][newparentid, 'Description']=descr
+          }
+        } else if (nodename == 'codelistitem') {
+          # note: first value chosen if multiple translated text values exist for different xml:langs
+          descr = xml_text(xml_child(x=(xml_child(x=node, search='Decode')), search='TranslatedText'))
+          if (!is.na(lbl)) {
+            self[[nodename]][newparentid, 'Description']=descr
+          }
+        }
+
     },
 
     visitNode = function(parentID, node) {
       elemName = tolower(xml_name(node))
       if (length(elemName)==0) {
-        browse()
         debugx = 3 #debugging
       }
 
@@ -123,6 +147,7 @@ odmObj <- R6Class("obmObj",
         if(length(chdr) > 0) {
           for(i in 1:length(chdr)) {
             childnode= chdr[i]
+            # could bypass skipped elements here rather than through additional call
             self$visitNode(parentID=newparentid,node=childnode)
           }
         }
@@ -137,6 +162,8 @@ odmObj <- R6Class("obmObj",
       print(paste0(Sys.time(), ": beginning parseODM"))
       self$visitNode(NULL, self$xmlRoot)
       print(paste0(Sys.time(), ": parseODM complete"))
+      print(paste0(Sys.time(), " Metadata Summary: ", nrow(self$formdef), " forms with ", nrow(self$itemdef), " fields"))
+      print(paste0(Sys.time(), " Clinical Data Summary: ", nrow(self$subjectdata), " subjects with ", nrow(self$itemdata), " datapoints"))
     },
 
     writeParquetToS3 = function(bucketName="viome-studies") {
