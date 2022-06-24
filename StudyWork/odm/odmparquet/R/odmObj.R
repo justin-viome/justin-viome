@@ -113,6 +113,10 @@ odmObj <- R6Class("obmObj",
       if (nodename=='itemdef') {
         # note: first value chosen if multiple translated text values exist for different xml:langs
           lbl = xml_text(xml_child(x=(xml_child(x=node, search='Question')), search='TranslatedText'))
+          print(node)
+          print(paste0("xml child: ", xml_child(x=node, search='Question')))
+          print(paste0("lbl is: ", lbl))
+          browser()
           # TODO: debug
           if (!is.na(lbl)) {
             self[[nodename]][newparentid, 'Label']=lbl

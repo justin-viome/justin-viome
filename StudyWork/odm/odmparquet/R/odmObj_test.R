@@ -35,7 +35,15 @@ testParseFullStudy = function() {
 
   x$parseODM()
   x$writeParquetToS3()
-}s
+}
+
+getGrandChildValue = function () {
+  testfile='/Users/justin/Downloads/itemdeftest.xml'
+  xml = read_xml(testfile)
+  root = xml_root(xml)
+  gc=xml_text(xml_child(x=(xml_child(x=root, search='Question')), search='TranslatedText'))
+}
+
 
 
 
