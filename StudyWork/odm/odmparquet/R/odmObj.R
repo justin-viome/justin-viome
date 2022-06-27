@@ -112,26 +112,30 @@ odmObj <- R6Class("obmObj",
       # set itemdef label to be question value under description
       if (nodename=='itemdef') {
         # note: first value chosen if multiple translated text values exist for different xml:langs
-          lbl = xml_text(xml_child(x=(xml_child(x=node, search='Question')), search='TranslatedText'))
-          print(node)
-          print(paste0("xml child: ", xml_child(x=node, search='Question')))
-          print(paste0("lbl is: ", lbl))
-          browser()
-          # TODO: debug
-          if (!is.na(lbl)) {
-            self[[nodename]][newparentid, 'Label']=lbl
-          }
+        xc=xml_children(node)
+        lbl = xml_text(xml_child(xc[which(xml_name(xc)=='Question')]))
+        if (!is.na(lbl)) {
+          self[[nodename]][newparentid, 'Label']=lbl
+        }
         } else if (nodename =='codelist') {
           # note: first value chosen if multiple translated text values exist for different xml:langs
-          descr = xml_text(xml_child(x=(xml_child(x=node, search='Description')), search='TranslatedText'))
-          if (!is.na(lbl)) {
-            self[[nodename]][newparentid, 'Description']=descr
+          xc=xml_children(node)
+          dn=xc[which(xml_name(xc)=='Description')]
+          if (length(dn) > 0) {
+            descr = xml_text(xml_child(dn))
+            if (!is.na(descr)) {
+              self[[nodename]][newparentid, 'Description']=descr
+            }
           }
         } else if (nodename == 'codelistitem') {
           # note: first value chosen if multiple translated text values exist for different xml:langs
-          descr = xml_text(xml_child(x=(xml_child(x=node, search='Decode')), search='TranslatedText'))
-          if (!is.na(lbl)) {
-            self[[nodename]][newparentid, 'Description']=descr
+          xc=xml_children(node)
+          dn=xc[which(xml_name(xc)=='Decode')]
+          if (length(dn) > 0) {
+            descr = xml_text(xml_child(dn))
+            if (!is.na(descr)) {
+              self[[nodename]][newparentid, 'Description']=descr
+            }
           }
         }
 
@@ -168,22 +172,7 @@ odmObj <- R6Class("obmObj",
       print(paste0(Sys.time(), ": parseODM complete"))
       print(paste0(Sys.time(), " Metadata Summary: ", nrow(self$formdef), " forms with ", nrow(self$itemdef), " fields"))
       print(paste0(Sys.time(), " Clinical Data Summary: ", nrow(self$subjectdata), " subjects with ", nrow(self$itemdata), " datapoints"))
-    },
-
-    writeParquetToS3 = function(bucketName="viome-studies") {
-
-      print(paste0(Sys.time(), ": writeParquestToS3 started"))
-      basePath = paste0("s3://", bucketName, "/", self$studyname, "/ODMparquet/")
-      # iterate through list of objects and write each to s3 even if they are empty
-      for (i in 1:length(self$odmdfnames)) {
-        elem = self$odmdfnames[i]
-        writePath = path=paste0(basePath, elem, "/")
-        print(paste0(Sys.time(), ": writing element ", elem, " to ", writePath))
-        write_dataset(dataset=self[[elem]],path = writePath, format='parquet')
-      }
-      print(paste0(Sys.time(), ": writeParquestToS3 complete"))
-
-
     }
+
   )
 )

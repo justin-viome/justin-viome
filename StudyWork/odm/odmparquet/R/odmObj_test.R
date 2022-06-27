@@ -20,17 +20,17 @@ simpleTest = function() {
 testParseSmallFIle = function () {
   smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
   xml = read_xml(smallrealFile)
-  initializeAWS()
+  initializeAWSFromFile()
   x = odmObj$new(studyname = 'testn', xmlDoc = xml)
 
   x$parseODM()
-  x$writeParquetToS3()
+  writeParquetToS3(x)
 }
 
 testParseFullStudy = function() {
   v128xml = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
   xml = read_xml(v128xml)
-  initializeAWS()
+  initializeAWSFromFile()
   x = odmObj$new(studyname = 'v128.234', xmlDoc = xml)
 
   x$parseODM()
@@ -44,8 +44,14 @@ getGrandChildValue = function () {
   gc=xml_text(xml_child(x=(xml_child(x=root, search='Question')), search='TranslatedText'))
 }
 
+# read odm file from s3
+readODMFromS3= function(s3bucket="viome-studies", s3FileLocation) {
+  initializeAWS()
+  out=s3read_using(FUN=read_xml, bucket = bucket, object = s3FileLocation)
 
-
+  #TODO: handle errors such as invalid file format, or xml file that isn't ODM
+  out
+}
 
 
 
