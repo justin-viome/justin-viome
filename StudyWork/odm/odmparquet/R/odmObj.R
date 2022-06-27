@@ -65,7 +65,7 @@ odmObj <- R6Class("obmObj",
     itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","ItemOID","Value","fk_itemgroupdata", "viomestudyname")),
 
     odmdfnames = c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref',
-                   'itemgroupdef', 'itemdef', 'question', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata',
+                   'itemgroupdef', 'itemdef', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata',
                    'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata'),
 
     studyname = '',
@@ -106,7 +106,7 @@ odmObj <- R6Class("obmObj",
       }
 
       # set studyname for all rows
-      self[[nodename]][newparentid, col.len] = s_viomestudyname
+      self[[nodename]][newparentid, col.len] = self$studyname
 
       # special case handling
       # set itemdef label to be question value under description

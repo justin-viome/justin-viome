@@ -17,7 +17,7 @@ simpleTest = function() {
 }
 
 
-testParseSmallFIle = function () {
+testParseSmallFile = function () {
   smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
   xml = read_xml(smallrealFile)
   initializeAWSFromFile()
@@ -34,7 +34,7 @@ testParseFullStudy = function() {
   x = odmObj$new(studyname = 'v128.234', xmlDoc = xml)
 
   x$parseODM()
-  x$writeParquetToS3()
+  writeParquetToS3(x)
 }
 
 getGrandChildValue = function () {
@@ -46,7 +46,7 @@ getGrandChildValue = function () {
 
 # read odm file from s3
 readODMFromS3= function(s3bucket="viome-studies", s3FileLocation) {
-  initializeAWS()
+  initializeAWSFromFile()
   out=s3read_using(FUN=read_xml, bucket = bucket, object = s3FileLocation)
 
   #TODO: handle errors such as invalid file format, or xml file that isn't ODM
