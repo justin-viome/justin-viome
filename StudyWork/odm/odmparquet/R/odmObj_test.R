@@ -37,6 +37,16 @@ testParseFullStudy = function() {
   writeParquetToS3(x)
 }
 
+testParseFullStudyRedcap = function() {
+
+  v302xml = "/Users/justin/Downloads/V302_2022-06-28_1048.REDCap.xml"
+  xml = read_xml(v302xml)
+  initializeAWSFromFile()
+  x = odmObj$new(studyname = 'v302', xmlDoc = xml)
+
+  x$parseODM()
+  writeParquetToS3(x)
+}
 getGrandChildValue = function () {
   testfile='/Users/justin/Downloads/itemdeftest.xml'
   xml = read_xml(testfile)
@@ -53,5 +63,13 @@ readODMFromS3= function(s3bucket="viome-studies", s3FileLocation) {
   out
 }
 
+testJoinData = function() {
+  v128xml = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
+  xml = read_xml(v128xml)
+  initializeAWSFromFile()
+  x = odmObj$new(studyname = 'v128.234', xmlDoc = xml)
 
+  x$parseODM()
 
+  #check that pks and fks match up as intended
+}

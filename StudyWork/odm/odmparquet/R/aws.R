@@ -13,7 +13,7 @@ writeParquetToS3 = function(odmobj, bucketName="viome-studies") {
 
     ds = odmobj[[elem]]
     if (is.null(ds)) {
-      print(paste0("Element ", elem, " doesn't exist in input object and can't be written to parquet.Skipped."))
+      print(paste0("Element ", elem, " doesn't exist in input object and can't be written to parquet. Skipped."))
     } else {
       print(paste0(Sys.time(), ": writing element ", elem, " to ", writePath))
       write_dataset(dataset=ds,path = writePath, format='parquet')

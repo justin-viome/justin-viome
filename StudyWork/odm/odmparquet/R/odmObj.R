@@ -14,13 +14,16 @@ library(xml2)
 #clinical data:
 #clinicaldata,subjectdata, studyeventdata, formdata, itemgroupdata, itemdata
 
-# add fk column second from the end for consistent setting logic
+
 odmObj <- R6Class("obmObj",
   public = list(
-    # use datatables to allow for in-place changes.Dataframes do not.
-    odm = setNames(data.frame(matrix(ncol = 17, nrow = 0)), c("pk_odm", "Description", "FileType", "Granularity", "Archival", "FileOID", "CreationDateTime", "PriorFileOID",
+    # predefine data frames for all capturable elements.
+    # add fk column second from the end for consistent setting logic
+
+    # odm element is the top-level element and includes "data_updated_date" and a "parquet_write"date" fields.
+    odm = setNames(data.frame(matrix(ncol = 19, nrow = 0)), c("pk_odm", "Description", "FileType", "Granularity", "Archival", "FileOID", "CreationDateTime", "PriorFileOID",
                                                               "AsOfDateTime", "ODMVersion", "Originator", "SourceSystem","SourceSystemVersion",
-                                                              "ID", "xmlns", "fk_none", "viomestudyname")),
+                                                              "ID", "xmlns", "data_updated_date", "parquet_write_date", "fk_none", "viomestudyname")),
     study = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_study", "OID", "fk_odm", "viomestudyname")),
     #globalVariables = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_globalvariables", "studyname", "studyDescription", "protocolname", "fk_study", "viomestudyname")),
     metadataversion = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_metadataversion", "OID", "Version", "fk_study", "viomestudyname")),
@@ -69,8 +72,10 @@ odmObj <- R6Class("obmObj",
                    'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata'),
 
     studyname = '',
+    data_updated_date=Sys.Date(),
     xmlDoc = NULL,
     xmlRoot = NULL,
+
 
     initialize = function(studyname, xmlDoc) {
       stopifnot(!is.null(studyname))
@@ -109,15 +114,19 @@ odmObj <- R6Class("obmObj",
       self[[nodename]][newparentid, col.len] = self$studyname
 
       # special case handling
-      # set itemdef label to be question value under description
-      if (nodename=='itemdef') {
+      if (nodename=='odm') {
+        tdy = Sys.Date()
+        self[[nodename]][newparentid, 'data_updated_date']=self$data_updated_date
+        self[[nodename]][newparentid, 'parquet_write_date']=tdy
+      } else if (nodename=='itemdef') {
+        # set itemdef label to be question value under description
         # note: first value chosen if multiple translated text values exist for different xml:langs
         xc=xml_children(node)
         lbl = xml_text(xml_child(xc[which(xml_name(xc)=='Question')]))
         if (!is.na(lbl)) {
           self[[nodename]][newparentid, 'Label']=lbl
         }
-        } else if (nodename =='codelist') {
+      } else if (nodename =='codelist') {
           # note: first value chosen if multiple translated text values exist for different xml:langs
           xc=xml_children(node)
           dn=xc[which(xml_name(xc)=='Description')]
@@ -143,9 +152,6 @@ odmObj <- R6Class("obmObj",
 
     visitNode = function(parentID, node) {
       elemName = tolower(xml_name(node))
-      if (length(elemName)==0) {
-        debugx = 3 #debugging
-      }
 
       # null returned when element is intentionally skipped
       if (!is.null(self[[elemName]])) {
