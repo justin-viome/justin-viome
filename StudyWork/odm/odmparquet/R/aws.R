@@ -9,7 +9,7 @@ writeParquetToS3 = function(odmobj, bucketName="viome-studies") {
   # iterate through list of objects and write each to s3 even if they are empty
   for (i in 1:length(odmobj$odmdfnames)) {
     elem = odmobj$odmdfnames[i]
-    writePath = path=paste0(basePath, elem, "//")
+    writePath = path=paste0(basePath, elem, "/")
 
     ds = odmobj[[elem]]
     if (is.null(ds)) {
