@@ -65,13 +65,14 @@ odmObj <- R6Class("obmObj",
     studyeventdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_studyeventdata","StudyEventOID","StudyEventRepeatKey","fk_subjectdata", "viomestudyname")),
     formdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_formdata","FormOID", "FormRepeatKey","fk_studyeventdata","viomestudyname")),
     itemgroupdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemgroupdata","ItemGroupOID","itemgrouprepeatkey","fk_formdata", "viomestudyname")),
-    itemdata = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_itemdata","ItemOID","Value","fk_itemgroupdata", "viomestudyname")),
+    itemdata = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_itemdata","ItemOID","Value", "SubjectKey", "fk_itemgroupdata", "viomestudyname")),
 
     odmdfnames = c('odm', 'study', 'metadataversion', 'protocol', 'studyeventref', 'studyeventdef', 'formref', 'formdef', 'itemgroupref',
                    'itemgroupdef', 'itemdef', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata',
                    'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata'),
 
     studyname = '',
+    subjectkey = '', # store the subject key when parsing subjectdata so child itemdata elements can store it for faster joins
     data_updated_date=Sys.Date(),
     xmlDoc = NULL,
     xmlRoot = NULL,
@@ -118,6 +119,11 @@ odmObj <- R6Class("obmObj",
         tdy = Sys.Date()
         self[[nodename]][newparentid, 'data_updated_date']=self$data_updated_date
         self[[nodename]][newparentid, 'parquet_write_date']=tdy
+      } else if (nodename=='subjectdata') {
+        self$subjectkey=xml_attr(x=node, attr='SubjectKey')
+      } else if (nodename=='itemdata') {
+        # set subjectkey at itemdata level
+        self[[nodename]][newparentid, 'SubjectKey']=self$subjectkey
       } else if (nodename=='itemdef') {
         # set itemdef label to be question value under description
         # note: first value chosen if multiple translated text values exist for different xml:langs

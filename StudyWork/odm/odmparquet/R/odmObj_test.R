@@ -27,7 +27,7 @@ testParseSmallFile = function () {
   writeParquetToS3(x)
 }
 
-testParseFullStudy = function() {
+testParseNCrawlFullStudy = function() {
   v128xml = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
   xml = read_xml(v128xml)
   initializeAWSFromFile()
@@ -35,6 +35,8 @@ testParseFullStudy = function() {
 
   x$parseODM()
   writeParquetToS3(x)
+
+  runStudyCrawler(crawlerName = "jt-odmparquet")
 }
 
 testParseFullStudyRedcap = function() {
