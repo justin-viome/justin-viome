@@ -2,25 +2,32 @@
 
 library(arrow)
 
-writeParquetToS3 = function(odmobj, bucketName="viome-studies") {
+writeParquetToStudiesS3 = function(odmobj) {
+  basePath = paste0("s3://viome-studies/ODMparquet/")
+  writeODMParquetToS3(odmobj=odmobj, writePath=basePath)
+}
 
-  print(paste0(Sys.time(), ": writeParquestToS3 started"))
-  basePath = paste0("s3://", bucketName, "/", odmobj$studyname, "/ODMparquet/")
+
+writeODMParquetToS3 = function(odmobj, writePath) {
+  print(paste0(Sys.time(), ": writeODMParquetToS3 started"))
   # iterate through list of objects and write each to s3 even if they are empty
   for (i in 1:length(odmobj$odmdfnames)) {
     elem = odmobj$odmdfnames[i]
-    writePath = path=paste0(basePath, elem, "/")
-
     ds = odmobj[[elem]]
+
     if (is.null(ds)) {
       print(paste0("Element ", elem, " doesn't exist in input object and can't be written to parquet. Skipped."))
+    } else if (nrow(ds)==0) {
+      print(paste0("Element ", elem, " has no data in input ODM file and won't be written to parquet. Skipped."))
     } else {
       print(paste0(Sys.time(), ": writing element ", elem, " to ", writePath))
-      write_dataset(dataset = ds, path = writePath, format = "parquet", use_dictionary = TRUE, write_statistics = TRUE)
+      writePath = path=paste0(basePath, elem, "/")
+      write_dataset(dataset = ds, path = writePath, format = "parquet",
+                    basename_template = paste0(odmobj$studyname, "-part-{i}.parquet"),
+                    use_dictionary = TRUE, write_statistics = TRUE)
     }
   }
-  print(paste0(Sys.time(), ": writeParquestToS3 complete"))
-
+  print(paste0(Sys.time(), ": writeODMParquetToS3 complete"))
 }
 
 # assumes aws creds are in system env

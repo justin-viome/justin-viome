@@ -5,50 +5,51 @@ library(assertthat)
 library(xml2)
 library(arrow)
 
-simpleTest = function() {
-  smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
-  xml = read_xml(smallrealFile)
-  x = odmObj$new(studyname = 'testn', xmlDoc = xml)
-
-  assert_that(x$studyname=='testn')
-
-  nodename='itemdef'
-  t1= x$subjectdata
-}
-
 
 testParseSmallFile = function () {
   smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
-  xml = read_xml(smallrealFile)
   initializeAWSFromFile()
-  x = odmObj$new(studyname = 'testn', xmlDoc = xml)
+  x = odmObj$new(studyname = 'testn', xmlFile = smallrealFile)
 
   x$parseODM()
-  writeParquetToS3(x)
 }
 
-testParseNCrawlFullStudy = function() {
-  v128xml = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
-  xml = read_xml(v128xml)
+testParseNCrawlCastorAndRedcap = function() {
   initializeAWSFromFile()
-  x = odmObj$new(studyname = 'v128.234', xmlDoc = xml)
+  castor_v128xml = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
+  castorobj = odmObj$new(studyname = 'v128.234', xmlFile = castor_v128xml)
+  castorobj$parseODM()
+  writeParquetToStudiesS3(castorobj)
 
-  x$parseODM()
-  writeParquetToS3(x)
+  redcap_v302xml = "/Users/justin/Downloads/V302_2022-06-28_1048.REDCap.xml"
+  redcapobj = odmObj$new(studyname = 'v302', xmlFile = redcap_v302xml)
+  redcapobj$parseODM()
+  writeParquetToStudiesS3(redcapobj)
 
-  runStudyCrawler(crawlerName = "jt-odmparquet")
+  runStudyCrawler()
 }
-
-testParseFullStudyRedcap = function() {
-
-  v302xml = "/Users/justin/Downloads/V302_2022-06-28_1048.REDCap.xml"
-  xml = read_xml(v302xml)
-  initializeAWSFromFile()
-  x = odmObj$new(studyname = 'v302', xmlDoc = xml)
-
-  x$parseODM()
-  writeParquetToS3(x)
-}
+# testParseNCrawlFullStudy = function() {
+#   v128xml = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
+#   xml = read_xml(v128xml)
+#   initializeAWSFromFile()
+#   x = odmObj$new(studyname = 'v128.234', xmlDoc = xml)
+#
+#   x$parseODM()
+#   writeParquetToS3(x)
+#
+#   runStudyCrawler(crawlerName = "jt-odmparquet")
+# }
+#
+# testParseFullStudyRedcap = function() {
+#
+#   v302xml = "/Users/justin/Downloads/V302_2022-06-28_1048.REDCap.xml"
+#   xml = read_xml(v302xml)
+#   initializeAWSFromFile()
+#   x = odmObj$new(studyname = 'v302', xmlDoc = xml)
+#
+#   x$parseODM()
+#   writeParquetToS3(x)
+# }
 getGrandChildValue = function () {
   testfile='/Users/justin/Downloads/itemdeftest.xml'
   xml = read_xml(testfile)

@@ -74,15 +74,18 @@ odmObj <- R6Class("obmObj",
     studyname = '',
     subjectkey = '', # store the subject key when parsing subjectdata so child itemdata elements can store it for faster joins
     data_updated_date=Sys.Date(),
+    xmlFile = NULL,
     xmlDoc = NULL,
     xmlRoot = NULL,
 
 
-    initialize = function(studyname, xmlDoc) {
+    initialize = function(studyname, xmlFile) {
       stopifnot(!is.null(studyname))
       stopifnot(nchar(studyname) > 0)
       self$studyname=studyname
 
+      self$xmlFile=xmlFile
+      xmlDoc = read_xml(xmlFile)
       stopifnot(!is.null(xmlDoc))
       self$xmlDoc = xmlDoc
       self$xmlRoot = xml_root(self$xmlDoc)
