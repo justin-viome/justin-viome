@@ -78,14 +78,19 @@ odmObj <- R6Class("obmObj",
     xmlDoc = NULL,
     xmlRoot = NULL,
 
-
+    # initialize can take either a local file or an s3 file location as input
     initialize = function(studyname, xmlFile) {
       stopifnot(!is.null(studyname))
       stopifnot(nchar(studyname) > 0)
       self$studyname=studyname
 
       self$xmlFile=xmlFile
-      xmlDoc = read_xml(xmlFile)
+
+      if (startsWith(xmlFile, "s3://")) {
+        xmlDoc=aws.s3::s3read_using(read_xml, object=xmlFile)
+      } else {
+        xmlDoc = read_xml(xmlFile)
+      }
       stopifnot(!is.null(xmlDoc))
       self$xmlDoc = xmlDoc
       self$xmlRoot = xml_root(self$xmlDoc)

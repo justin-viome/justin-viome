@@ -1,6 +1,7 @@
-#justin.thomson#@viome.com
+# justin.thomson#@viome.com
 
 library(arrow)
+library(aws.s3)
 
 writeParquetToStudiesS3 = function(odmobj) {
   basePath = paste0("s3://viome-studies/ODMparquet/")

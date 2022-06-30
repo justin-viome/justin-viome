@@ -1,7 +1,7 @@
 Package: odmparquet
 Type: Package
 Title: This package converts CDISC ODM Files into parquet 
-Version: 0.1.0
+Version: 0.2.0
 Author: Justin Thomson
 Maintainer: The package maintainer <justin.thomson@viome.com>
 Description: 
@@ -10,3 +10,9 @@ Description:
 License: proprietary
 Encoding: UTF-8
 LazyData: true
+Imports: 
+    xml2,
+    arrow,
+    R6,
+    aws.s3
+    

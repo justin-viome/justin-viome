@@ -1,10 +1,8 @@
 # justin.thomson@viome.com
 
-
 library(assertthat)
 library(xml2)
 library(arrow)
-
 
 testParseSmallFile = function () {
   smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
@@ -58,11 +56,12 @@ getGrandChildValue = function () {
 }
 
 # read odm file from s3
-readODMFromS3= function(s3bucket="viome-studies", s3FileLocation) {
+testParseXmlFromS3= function() {
+  s3FileLocation='s3://viome-studies/v128.234/ODM/V128_Pilot_odm_export_20220601012550.xml'
   initializeAWSFromFile()
-  out=s3read_using(FUN=read_xml, bucket = bucket, object = s3FileLocation)
+  x = odmObj$new(studyname = 'v128test', xmlFile = s3FileLocation)
 
-  #TODO: handle errors such as invalid file format, or xml file that isn't ODM
+  x$parseODM()
   out
 }
 

@@ -1,9 +1,6 @@
 # justin.thomson@viome.com
 
-# justin.thomson@viome.com
-
 library(XML)
-library(REDCapR)
 
 # export records including survey fields
 uri <- "https://redcap.vanderbilt.edu/api/"
