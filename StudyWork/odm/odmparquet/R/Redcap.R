@@ -65,5 +65,33 @@ testFetch302 = function() {
 }
 
 
+downloadProjectXml = function(fileToWrite="/users/justin/Downloads/v302_odm_test.xml") {
+  token=Sys.getenv("REDCAP_TOKEN_302")
+  url <- "https://redcap.vanderbilt.edu/api/"
+  formData <- list("token"=token,
+                   content='project_xml',
+                   format='odm',
+                   returnMetadataOnly='false',
+                   exportFiles='false',
+                   exportSurveyFields='false',
+                   exportDataAccessGroups='false',
+                   returnFormat='odm'
+  )
+  response <- httr::POST(uri, body = formData, encode = "form")
+  if (response$status_code != 200) {
+    print(paste0('Bad response received from REDCap: ', response$status_code))
+  } else
+  {
+    print('Successful 200 response received from REDCap')
+    xml <- xmlInternalTreeParse(httr::content(response,type="text", encoding = "UTF-8"))
+    cleanXml = cleanStudyData(xml)
 
+    if (file.exists(fileToWrite)) {
+      file.remove(fileToWrite)
+    }
+    saveXML(cleanXml, fileToWrite)
+  }
+
+
+}
 
