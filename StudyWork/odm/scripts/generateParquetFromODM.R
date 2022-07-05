@@ -1,24 +1,16 @@
 # justin.thomson@viome.com
+# intended usage: Rscript generateParquetFromODM.R
+# assumes S3_ODM_LOCATION and S3_ODM_STUDY_NAME are set appropriately in environment
 
 library(odmparquet)
 library(xml2)
 library(aws.s3)
-library(arrow)
+library(arrow, warn.conflicts = F)
 library(R6)
 
 
 #!/usr/bin/env Rscript
 
-# this file allows parquet generation to be done from the command line using an s3location as input
-# args = commandArgs(trailingOnly=TRUE)
-#
-# if (length(args) != 2) {
-#   stop("Study name and the s3 location of the ODM xml file must be supplied in that order.", call.=FALSE)
-# } else {
-#   initializeAWSFromFile()
-#   studyName = args[1]
-#   s3Location = args[2]
-# }
 initializeAWSFromFile()
 s3Location = Sys.getenv("S3_ODM_LOCATION")
 s3StudyName = Sys.getenv("S3_ODM_STUDY_NAME")
