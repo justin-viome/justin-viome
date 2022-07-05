@@ -78,3 +78,12 @@ testJoinData = function() {
 
   #check that pks and fks match up as intended
 }
+
+testParseNWritev242 = function() {
+  redcap_v242xml = "/Users/justin/Downloads/v242.xml"
+  redcapobj = odmObj$new(studyname = 'v242', odmFileLocation = redcap_v242xml)
+  redcapobj$parseODM()
+  writeParquetToStudiesS3(redcapobj)
+
+  runStudyCrawler()
+}

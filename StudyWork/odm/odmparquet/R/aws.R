@@ -21,7 +21,7 @@ writeODMParquetToS3 = function(odmobj, basePath) {
     } else if (nrow(ds)==0) {
       print(paste0("Element ", elem, " has no data in input ODM file and won't be written to parquet. Skipped."))
     } else {
-      writePath = path=paste0(basePath, elem, "/")
+      writePath = paste0(basePath, elem, "/")
       print(paste0(Sys.time(), ": writing parquet file(s) for ", elem, " to ", writePath))
       write_dataset(dataset = ds, path = writePath, format = "parquet",
                     basename_template = paste0(odmobj$studyname, "-part-{i}.parquet"),
@@ -44,4 +44,9 @@ initializeAWSFromFile = function() {
   if (file.exists("/users/justin/git/justin-viome/set_env.R")) {
     source("/users/justin/git/justin-viome/set_env.R")
   }
+}
+
+# fetches ODM for all known Redcap Studies
+fetchRedcapFiles = function() {
+
 }

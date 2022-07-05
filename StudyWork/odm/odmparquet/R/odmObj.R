@@ -22,9 +22,9 @@ odmObj <- R6Class("obmObj",
     # add fk column second from the end for consistent setting logic
 
     # odm element is the top-level element and includes "data_updated_date" and a "parquet_write"date" fields.
-    odm = setNames(data.frame(matrix(ncol = 19, nrow = 0)), c("pk_odm", "Description", "FileType", "Granularity", "Archival", "FileOID", "CreationDateTime", "PriorFileOID",
+    odm = setNames(data.frame(matrix(ncol = 17, nrow = 0)), c("pk_odm", "Description", "FileType", "Granularity", "Archival", "FileOID", "CreationDateTime", "PriorFileOID",
                                                               "AsOfDateTime", "ODMVersion", "Originator", "SourceSystem","SourceSystemVersion",
-                                                              "ID", "xmlns", "data_updated_date", "parquet_write_date", "fk_none", "viomestudyname")),
+                                                              "ID", "xmlns", "fk_none", "viomestudyname")),
     study = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c("pk_study", "OID", "fk_odm", "viomestudyname")),
     #globalVariables = setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("pk_globalvariables", "studyname", "studyDescription", "protocolname", "fk_study", "viomestudyname")),
     metadataversion = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("pk_metadataversion", "OID", "Version", "fk_study", "viomestudyname")),
@@ -75,7 +75,6 @@ odmObj <- R6Class("obmObj",
     #### Other Class Variables ####
     studyname = '',
     subjectkey = '', # store the subject key when parsing subjectdata so child itemdata elements can store it for faster joins
-    data_updated_date=Sys.Date(),
     odmFileLocation = NULL,
     xmlDoc = NULL,
     xmlRoot = NULL,
@@ -126,11 +125,7 @@ odmObj <- R6Class("obmObj",
       self[[nodename]][newparentid, col.len] = self$studyname
 
       # special case handling
-      if (nodename=='odm') {
-        tdy = Sys.Date()
-        self[[nodename]][newparentid, 'data_updated_date']=self$data_updated_date
-        self[[nodename]][newparentid, 'parquet_write_date']=tdy
-      } else if (nodename=='subjectdata') {
+      if (nodename=='subjectdata') {
         self$subjectkey=xml_attr(x=node, attr='SubjectKey')
       } else if (nodename=='itemdata') {
         # set subjectkey at itemdata level

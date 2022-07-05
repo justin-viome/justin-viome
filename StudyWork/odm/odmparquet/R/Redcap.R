@@ -24,40 +24,6 @@ cleanStudyData = function(xml)
   xml
 }
 
-fetchREDCapData = function(uri, token, fileToWrite)
-{
-  formData <- list("token"=token,
-                   content='record',
-                   action='export',
-                   format='odm',
-                   type='flat',
-                   csvDelimiter='',
-                   rawOrLabel='label',
-                   rawOrLabelHeaders='label',
-                   exportCheckboxLabel='false',
-                   exportSurveyFields='true', #metadata around surveys
-                   exportDataAccessGroups='false',
-                   returnFormat='xml' # error format
-  )
-  response <- httr::POST(uri, body = formData, encode = "form")
-  if (response$status_code != 200) {
-    print(paste0('Bad response received from REDCap: ', response$status_code))
-  } else
-  {
-    print('Successful 200 response received from REDCap')
-    xml <- xmlInternalTreeParse(httr::content(response,type="text", encoding = "UTF-8"))
-    cleanXml = cleanStudyData(xml)
-
-    if (file.exists(fileToWrite)) {
-      file.remove(fileToWrite)
-    }
-    saveXML(cleanXml, fileToWrite)
-  }
-
-}
-
-# note that api access only returns clinical data
-# recap in Project Settings->Other Functionality allows full downloads of ODM for "project backup"
 testFetch302 = function() {
   mytoken=Sys.getenv("REDCAP_TOKEN_302")
   outLoc = "/users/justin/Downloads/v302_test.xml"
@@ -65,8 +31,9 @@ testFetch302 = function() {
 }
 
 
-downloadProjectXml = function(fileToWrite="/users/justin/Downloads/v302_odm_test.xml") {
-  token=Sys.getenv("REDCAP_TOKEN_302")
+fetchRedcapODM = function(studyname = "v302", redcapStudyUserToken=Sys.getenv("REDCAP_TOKEN_302"),
+                                    fileToWrite="/users/justin/Downloads/v302_odm_test.xml") {
+  token=redcapStudyUserToken
   url <- "https://redcap.vanderbilt.edu/api/"
   formData <- list("token"=token,
                    content='project_xml',
@@ -85,12 +52,18 @@ downloadProjectXml = function(fileToWrite="/users/justin/Downloads/v302_odm_test
     print('Successful 200 response received from REDCap')
     xml <- xmlInternalTreeParse(httr::content(response,type="text", encoding = "UTF-8"))
     cleanXml = cleanStudyData(xml)
-
-    if (file.exists(fileToWrite)) {
-      file.remove(fileToWrite)
-    }
-    saveXML(cleanXml, fileToWrite)
   }
+}
+
+writeRedcapODMXmlToDisk = function(studyName, xmlData, fileLocation) {
+  if (file.exists(fileLocation)) {
+    file.remove(fileLocation)
+  }
+  saveXML(xmlData, fileLocation)
+}
+
+writeRedcapODMXmlToS3 = function (studyName, xmlData, s3Location) {
+
 
 
 }
