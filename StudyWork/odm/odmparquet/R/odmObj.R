@@ -17,7 +17,8 @@ library(xml2)
 
 odmObj <- R6Class("obmObj",
   public = list(
-    # predefine data frames for all capturable elements.
+    #### ODM Data Frames ####
+    # predefine data frames for all capturable elements. ---
     # add fk column second from the end for consistent setting logic
 
     # odm element is the top-level element and includes "data_updated_date" and a "parquet_write"date" fields.
@@ -71,25 +72,27 @@ odmObj <- R6Class("obmObj",
                    'itemgroupdef', 'itemdef', 'externalquestion', 'codelistref', 'codelist', 'codelistitem', 'clinicaldata', 'subjectdata',
                    'studyeventdata', 'formdata', 'itemgroupdata', 'itemdata'),
 
+    #### Other Class Variables ####
     studyname = '',
     subjectkey = '', # store the subject key when parsing subjectdata so child itemdata elements can store it for faster joins
     data_updated_date=Sys.Date(),
-    xmlFile = NULL,
+    odmFileLocation = NULL,
     xmlDoc = NULL,
     xmlRoot = NULL,
 
+    #### Class Methods ####
     # initialize can take either a local file or an s3 file location as input
-    initialize = function(studyname, xmlFile) {
+    initialize = function(studyname=Sys.getenv("S3_ODM_STUDY_NAME"), odmFileLocation=Sys.getenv("S3_ODM_LOCATION")) {
       stopifnot(!is.null(studyname))
       stopifnot(nchar(studyname) > 0)
       self$studyname=studyname
 
-      self$xmlFile=xmlFile
+      self$odmFileLocation=odmFileLocation
 
-      if (startsWith(xmlFile, "s3://")) {
-        xmlDoc=aws.s3::s3read_using(read_xml, object=xmlFile)
+      if (startsWith(odmFileLocation, "s3://")) {
+        xmlDoc=aws.s3::s3read_using(read_xml, object=odmFileLocation)
       } else {
-        xmlDoc = read_xml(xmlFile)
+        xmlDoc = read_xml(odmFileLocation)
       }
       stopifnot(!is.null(xmlDoc))
       self$xmlDoc = xmlDoc
@@ -187,7 +190,7 @@ odmObj <- R6Class("obmObj",
     },
 
     parseODM = function() {
-      print(paste0(Sys.time(), ": beginning parseODM"))
+      print(paste0(Sys.time(), ": beginning parseODM using file: ", self$odmFileLocation))
       self$visitNode(NULL, self$xmlRoot)
       print(paste0(Sys.time(), ": parseODM complete"))
       print(paste0(Sys.time(), " Metadata Summary: ", nrow(self$formdef), " forms with ", nrow(self$itemdef), " fields"))

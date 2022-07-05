@@ -7,7 +7,7 @@ library(arrow)
 testParseSmallFile = function () {
   smallrealFile = "/Users/justin/Downloads/V128_reduced.xml"
   initializeAWSFromFile()
-  x = odmObj$new(studyname = 'testn', xmlFile = smallrealFile)
+  x = odmObj$new(studyname = 'testn', odmFileLocation = smallrealFile)
 
   x$parseODM()
 }
@@ -41,9 +41,8 @@ testParseNCrawlCastorAndRedcap = function() {
 # testParseFullStudyRedcap = function() {
 #
 #   v302xml = "/Users/justin/Downloads/V302_2022-06-28_1048.REDCap.xml"
-#   xml = read_xml(v302xml)
 #   initializeAWSFromFile()
-#   x = odmObj$new(studyname = 'v302', xmlDoc = xml)
+#   x = odmObj$new(studyname = 'v302', odmFileLocation = xml)
 #
 #   x$parseODM()
 #   writeParquetToS3(x)
@@ -59,17 +58,21 @@ getGrandChildValue = function () {
 testParseXmlFromS3= function() {
   s3FileLocation='s3://viome-studies/v128.234/ODM/V128_Pilot_odm_export_20220601012550.xml'
   initializeAWSFromFile()
-  x = odmObj$new(studyname = 'v128test', xmlFile = s3FileLocation)
+  x = odmObj$new(studyname = 'v128test', odmFileLocation = s3FileLocation)
 
   x$parseODM()
-  out
+}
+
+testParseFromEnvironmentVariables = function() {
+  initializeAWSFromFile()
+  x = odmObj$new()
+  x$parseODM()
 }
 
 testJoinData = function() {
   v128xml = "/Users/justin/Downloads/V128_Pilot_odm_export_20220601012550.xml"
-  xml = read_xml(v128xml)
   initializeAWSFromFile()
-  x = odmObj$new(studyname = 'v128.234', xmlDoc = xml)
+  x = odmObj$new(studyname = 'v128.234', odmFileLocation = xml)
 
   x$parseODM()
 
