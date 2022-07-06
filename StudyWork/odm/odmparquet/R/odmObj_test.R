@@ -79,8 +79,12 @@ testJoinData = function() {
   #check that pks and fks match up as intended
 }
 
-testParseNWritev242 = function() {
-  redcap_v242xml = "/Users/justin/Downloads/v242.xml"
+testFetchRedcapODM197 = function() {
+  fetchRedcapODMAndSaveToS3()
+}
+testFetchParseNWritev242 = function() {
+  fetchRedcapODMAndSaveLocally(studyname = 'v242', redcapStudyUserToken = Sys.getenv("REDCAP_TOKEN_242"))
+  redcap_v242xml = "/Users/justin/Downloads/v242_odm.xml"
   redcapobj = odmObj$new(studyname = 'v242', odmFileLocation = redcap_v242xml)
   redcapobj$parseODM()
   writeParquetToStudiesS3(redcapobj)

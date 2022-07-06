@@ -3,6 +3,8 @@
 library(arrow)
 library(aws.s3)
 
+s_AWS_CONFIG_LOCATION = 's3://viome-studies/config/set_env_ingestion.R'
+
 writeParquetToStudiesS3 = function(odmobj) {
   basePath = paste0("s3://viome-studies/ODMparquet/")
   writeODMParquetToS3(odmobj=odmobj, basePath=basePath)
@@ -39,10 +41,17 @@ runStudyCrawler = function(crawlerName='jt-odmparquet') {
   system(command=commandStr)
 }
 
-#load environment context if github-hidden file exists
+# load environment context if github-hidden file exists locally
+# otherwise load from standard s3 location
 initializeAWSFromFile = function() {
   if (file.exists("/users/justin/git/justin-viome/set_env.R")) {
+    print("setting environment variables from local file")
     source("/users/justin/git/justin-viome/set_env.R")
+  } else if (aws.s3::object_exists(s_AWS_CONFIG_LOCATION)) {
+    print(paste0("setting environment variables from s3 file at: ", s_AWS_CONFIG_LOCATION))
+    aws.s3::s3read_using(base::source, object=s_AWS_CONFIG_LOCATION)
+  } else {
+    print(paste("no environment config files found locally or at ", s_AWS_CONFIG_LOCATION))
   }
 }
 

@@ -31,8 +31,7 @@ testFetch302 = function() {
 }
 
 
-fetchRedcapODM = function(studyname = "v302", redcapStudyUserToken=Sys.getenv("REDCAP_TOKEN_302"),
-                                    fileToWrite="/users/justin/Downloads/v302_odm_test.xml") {
+fetchRedcapODM = function(studyname = "v302", redcapStudyUserToken=Sys.getenv("REDCAP_TOKEN_302")) {
   token=redcapStudyUserToken
   url <- "https://redcap.vanderbilt.edu/api/"
   formData <- list("token"=token,
@@ -55,16 +54,34 @@ fetchRedcapODM = function(studyname = "v302", redcapStudyUserToken=Sys.getenv("R
   }
 }
 
-writeRedcapODMXmlToDisk = function(studyName, xmlData, fileLocation) {
+writeXmlToDisk = function(studyName, xmlData, fileLocation) {
   if (file.exists(fileLocation)) {
     file.remove(fileLocation)
   }
+  print(paste0("writing output odm xml for ", studyname, " to ", fileLocation))
   saveXML(xmlData, fileLocation)
 }
 
-writeRedcapODMXmlToS3 = function (studyName, xmlData, s3Location) {
-
-
-
+writeRedcapODMXmlToS3 = function (studyName, xmlData, s3Bucket, s3Location) {
+  print(paste0("writing output odm xml for ", studyname, " to ", s3Location))
+  aws.s3::save_object(object = xmlData, bucket = s3Bucket, file = s3Location, overwrite = T)
 }
+
+fetchRedcapODMAndSaveLocally = function(studyname, redcapStudyUserToken) {
+  fileToWrite=paste0("/users/justin/Downloads/", studyname, "_odm.xml")
+  odm=fetchRedcapODM(studyname = studyname, redcapStudyUserToken = redcapStudyUserToken)
+  writeXmlToDisk(studyName = studyname, xmlData = odm, fileLocation = fileToWrite)
+}
+
+fetchRedcapODMAndSaveToS3 = function(studyname) {
+  locName=paste0(studyname, "/", studyname, "/", studyname, "_odm.xml")
+
+  # try and get token using inputed studyname sans leading v
+  envKey = paste0("REDCAP_TOKEN_", gsub(pattern='v', replacement = '', x=studyname))
+  redcapStudyUserToken = Sys.getenv(paste0("REDCAP_TOKEN_", ))
+
+  odm=fetchRedcapODM(studyname = studyname, redcapStudyUserToken = redcapStudyUserToken)
+  writeRedcapODMXmlToS3(studyName = studyname, xmlData = odm, s3Bucket='viome-studies', s3Location=locName)
+}
+
 
