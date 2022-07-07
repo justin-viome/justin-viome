@@ -75,7 +75,7 @@ fetchRedcapODMAndSaveLocally = function(studyname, redcapStudyUserToken) {
 }
 
 fetchRedcapODMAndSaveToS3 = function(studyname) {
-  locName=paste0(studyname, "/ODM/", studyname, "_odm.xml")
+  locName=getStandardFolderStudyODMLocation(studyname)
 
   # TODO: fix issue.  Look at studyname='v197'. Not all responses from Redcap work.  Skip non live?
   envKey = paste0("REDCAP_TOKEN_", gsub(pattern='v', replacement = '', x=studyname))
@@ -89,4 +89,24 @@ fetchRedcapODMAndSaveToS3 = function(studyname) {
   }
 }
 
+# fetches ODM and writes to s3
+# if successful, generates parquet for study
+fetchNParseRedcapStudy = function(studyname) {
+  if (nchar(studyname)==0) {
+    stop("studyname must be provided")
+  } else if (substr(studyname, 1, 1) != 'v') {
+    stop("first character of study name must be 'v' per Viome convention")
+  }
+
+  fetchRedcapODMAndSaveToS3(studyname)
+  odmp=odmObj$new(studyname = s3StudyName, odmFileLocation = getStandardS3StudyODMLocation(studyname))
+  odmp$parseODM()
+  writeParquetToStudiesS3(odmobj = odmp)
+}
+
+# fetch redcap study data to s3 and run parquet generation
+updateStudyDataLake = function() {
+  fetchNParseRedcapStudy('v242')
+  runStudyCrawler()
+}
 

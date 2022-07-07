@@ -55,7 +55,18 @@ initializeAWSFromFile = function() {
   }
 }
 
-# fetches ODM for all known Redcap Studies
-fetchRedcapFiles = function() {
+# get standard location of latest xml data for given study
+# note this returns the object location within a bucket
+getStandardFolderStudyODMLocation = function(studyname) {
+  locName=paste0(studyname, "/ODM/", studyname, "_odm.xml")
 
+  locName
 }
+
+# get full path of standard latest odm location for given study
+getStandardS3StudyODMLocation = function (studyname) {
+  loc = paste0("s3://viome-studies/", getStandardFolderStudyODMLocation(studyname))
+
+  loc
+}
+
