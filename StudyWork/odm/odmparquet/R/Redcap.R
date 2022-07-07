@@ -63,8 +63,9 @@ writeXmlToDisk = function(studyName, xmlData, fileLocation) {
 }
 
 writeRedcapODMXmlToS3 = function (studyName, xmlData, s3Bucket, s3Location) {
-  print(paste0("writing output odm xml for ", studyname, " to ", s3Location))
-  aws.s3::save_object(object = xmlData, bucket = s3Bucket, file = s3Location, overwrite = T)
+  print(paste0("writing output odm xml for ", studyname, " to ", s3Bucket, "/", s3Location))
+  odmStr=XML::toString.XMLNode(xmlData)
+  s3write_using(x = xmlData, FUN = saveXML, bucket = s3Bucket, object = s3Location)
 }
 
 fetchRedcapODMAndSaveLocally = function(studyname, redcapStudyUserToken) {
@@ -74,14 +75,18 @@ fetchRedcapODMAndSaveLocally = function(studyname, redcapStudyUserToken) {
 }
 
 fetchRedcapODMAndSaveToS3 = function(studyname) {
-  locName=paste0(studyname, "/", studyname, "/", studyname, "_odm.xml")
+  locName=paste0(studyname, "/ODM/", studyname, "_odm.xml")
 
-  # try and get token using inputed studyname sans leading v
+  # TODO: fix issue.  Look at studyname='v197'. Not all responses from Redcap work.  Skip non live?
   envKey = paste0("REDCAP_TOKEN_", gsub(pattern='v', replacement = '', x=studyname))
-  redcapStudyUserToken = Sys.getenv(paste0("REDCAP_TOKEN_", ))
-
-  odm=fetchRedcapODM(studyname = studyname, redcapStudyUserToken = redcapStudyUserToken)
-  writeRedcapODMXmlToS3(studyName = studyname, xmlData = odm, s3Bucket='viome-studies', s3Location=locName)
+  redcapStudyUserToken = Sys.getenv(envKey)
+  if (is.null(redcapStudyUserToken) || nchar(redcapStudyUserToken)==0) {
+    stop(paste0("Redcap token not found in memory for key ", envKey))
+  } else {
+    print(paste0("fetching ODM for study ", studyname))
+    odm=fetchRedcapODM(studyname = studyname, redcapStudyUserToken = redcapStudyUserToken)
+    writeRedcapODMXmlToS3(studyName = studyname, xmlData = odm, s3Bucket='viome-studies', s3Location=locName)
+  }
 }
 
 

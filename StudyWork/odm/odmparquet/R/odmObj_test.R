@@ -80,7 +80,7 @@ testJoinData = function() {
 }
 
 testFetchRedcapODM197 = function() {
-  fetchRedcapODMAndSaveToS3()
+  fetchRedcapODMAndSaveToS3(studyname = 'v197')
 }
 testFetchParseNWritev242 = function() {
   fetchRedcapODMAndSaveLocally(studyname = 'v242', redcapStudyUserToken = Sys.getenv("REDCAP_TOKEN_242"))
