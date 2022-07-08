@@ -54,7 +54,7 @@ fetchRedcapODM = function(studyname = "v302", redcapStudyUserToken=Sys.getenv("R
   }
 }
 
-writeXmlToDisk = function(studyName, xmlData, fileLocation) {
+writeXmlToDisk = function(studyname, xmlData, fileLocation) {
   if (file.exists(fileLocation)) {
     file.remove(fileLocation)
   }
@@ -62,7 +62,7 @@ writeXmlToDisk = function(studyName, xmlData, fileLocation) {
   saveXML(xmlData, fileLocation)
 }
 
-writeRedcapODMXmlToS3 = function (studyName, xmlData, s3Bucket, s3Location) {
+writeRedcapODMXmlToS3 = function (studyname, xmlData, s3Bucket, s3Location) {
   print(paste0("writing output odm xml for ", studyname, " to ", s3Bucket, "/", s3Location))
   odmStr=XML::toString.XMLNode(xmlData)
   s3write_using(x = xmlData, FUN = saveXML, bucket = s3Bucket, object = s3Location)
@@ -104,9 +104,11 @@ fetchNParseRedcapStudy = function(studyname) {
   writeParquetToStudiesS3(odmobj = odmp)
 }
 
-# fetch redcap study data to s3 and run parquet generation
+# fetch redcap study data to s3, run parquet generation, and update the data catalog
 updateStudyDataLake = function() {
   fetchNParseRedcapStudy('v242')
+  fetchNParseRedcapStudy('v168')
+  fetchNParseRedcapStudy('v302')
   runStudyCrawler()
 }
 
