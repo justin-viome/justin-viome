@@ -71,7 +71,7 @@ writeRedcapODMXmlToS3 = function (studyname, xmlData, s3Bucket, s3Location) {
 fetchRedcapODMAndSaveLocally = function(studyname, redcapStudyUserToken) {
   fileToWrite=paste0("/users/justin/Downloads/", studyname, "_odm.xml")
   odm=fetchRedcapODM(studyname = studyname, redcapStudyUserToken = redcapStudyUserToken)
-  writeXmlToDisk(studyName = studyname, xmlData = odm, fileLocation = fileToWrite)
+  writeXmlToDisk(studyname = studyname, xmlData = odm, fileLocation = fileToWrite)
 }
 
 fetchRedcapODMAndSaveToS3 = function(studyname) {
@@ -85,7 +85,7 @@ fetchRedcapODMAndSaveToS3 = function(studyname) {
   } else {
     print(paste0("fetching ODM for study ", studyname))
     odm=fetchRedcapODM(studyname = studyname, redcapStudyUserToken = redcapStudyUserToken)
-    writeRedcapODMXmlToS3(studyName = studyname, xmlData = odm, s3Bucket='viome-studies', s3Location=locName)
+    writeRedcapODMXmlToS3(studyname = studyname, xmlData = odm, s3Bucket='viome-studies', s3Location=locName)
   }
 }
 
@@ -99,7 +99,7 @@ fetchNParseRedcapStudy = function(studyname) {
   }
 
   fetchRedcapODMAndSaveToS3(studyname)
-  odmp=odmObj$new(studyname = s3StudyName, odmFileLocation = getStandardS3StudyODMLocation(studyname))
+  odmp=odmObj$new(studyname = studyname, odmFileLocation = getStandardS3StudyODMLocation(studyname))
   odmp$parseODM()
   writeParquetToStudiesS3(odmobj = odmp)
 }
