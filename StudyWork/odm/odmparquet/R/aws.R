@@ -33,11 +33,15 @@ writeODMParquetToS3 = function(odmobj, basePath) {
   print(paste0(Sys.time(), ": writeODMParquetToS3 complete"))
 }
 
-# assumes aws creds are in system env
+# assumes aws access key and secret access key are in system env
 runStudyCrawler = function(crawlerName='jt-odmparquet') {
 
   print(paste0("starting crawler ", crawlerName))
-  commandStr = paste0("aws glue start-crawler --name ", crawlerName, " --region ", Sys.getenv("AWS_REGION"))
+  envRegion = Sys.getenv("AWS_REGION")
+  if (nchar(envRegion)==0) {
+    envRegion='us-east-1'
+  }
+  commandStr = paste0("aws glue start-crawler --name ", crawlerName, " --region ", envRegion)
   system(command=commandStr)
 }
 
