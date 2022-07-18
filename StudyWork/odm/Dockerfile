@@ -22,7 +22,7 @@ RUN R CMD INSTALL --preclean --no-multiarch --with-keep.source odmparquet
 COPY scripts scripts
 
 ENV S3_ODM_LOCATION=s3://viome-studies/v128.234/ODM/V128_Pilot_odm_export_20220601012550.xml
-ENV S3_ODM_STUDY_NAME=v128.234
+ENV S3_ODM_STUDY_NAME=v128.234-test
 
 ENV AWS_ACCESS_KEY_ID=
 ENV AWS_SECRET_ACCESS_KEY=
