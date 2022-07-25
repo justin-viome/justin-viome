@@ -6,15 +6,15 @@ RUN apt-get -y update -qq \
   && apt-get install -y --no-install-recommends \
     awscli
 
-RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile \
-  && R -e "install.packages('xml2')" \ 
-  && R -e "install.packages('aws.s3')" \ 
-  && R -e "install.packages('R6')" \
-  && R -e "install.packages('XML')"
+RUN Rscript -e "library(remotes)"
+RUN Rscript -e "remotes::install_version('xml2', version = '1.3.3', repos = 'http://cran.us.r-project.org')"
+RUN Rscript -e "remotes::install_version('aws.s3', version = '0.3.21', repos = 'http://cran.us.r-project.org')"
+RUN Rscript -e "remotes::install_version('R6', version = NULL, repos = 'http://cran.us.r-project.org')"
+RUN Rscript -e "remotes::install_version('XML', version = NULL, repos = 'http://cran.us.r-project.org')"
 
 # For a faster, more complete installation, set the environment variable NOT_CRAN=true before installing
 ENV NOT_CRAN=true
-RUN R -e "install.packages('arrow')" 
+RUN Rscript -e "remotes::install_version('arrow', version = '8.0.0', repos = 'http://cran.us.r-project.org')"
 
 COPY odmparquet odmparquet
 RUN R CMD INSTALL --preclean --no-multiarch --with-keep.source odmparquet
