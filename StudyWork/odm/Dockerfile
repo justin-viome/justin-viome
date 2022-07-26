@@ -9,8 +9,8 @@ RUN apt-get -y update -qq \
 RUN Rscript -e "library(remotes)"
 RUN Rscript -e "remotes::install_version('xml2', version = '1.3.3', repos = 'http://cran.us.r-project.org')"
 RUN Rscript -e "remotes::install_version('aws.s3', version = '0.3.21', repos = 'http://cran.us.r-project.org')"
-RUN Rscript -e "remotes::install_version('R6', version = NULL, repos = 'http://cran.us.r-project.org')"
-RUN Rscript -e "remotes::install_version('XML', version = NULL, repos = 'http://cran.us.r-project.org')"
+RUN Rscript -e "remotes::install_version('R6', version = '2.5.1', repos = 'http://cran.us.r-project.org')"
+RUN Rscript -e "remotes::install_version('XML', version = '3.99.0.9', repos = 'http://cran.us.r-project.org')"
 
 # For a faster, more complete installation, set the environment variable NOT_CRAN=true before installing
 ENV NOT_CRAN=true
