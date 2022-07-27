@@ -89,7 +89,7 @@ fetchRedcapODMAndSaveToS3 = function(studyname) {
   }
 }
 
-# fetches ODM and writes to s3
+# fetches ODM, writes ODM xml to s3, transforms odm, and writes parquet to s3
 # if successful, generates parquet for study
 fetchNParseRedcapStudy = function(studyname) {
   if (nchar(studyname)==0) {
@@ -99,9 +99,15 @@ fetchNParseRedcapStudy = function(studyname) {
   }
 
   fetchRedcapODMAndSaveToS3(studyname)
+  odmp = transformODM(studyname)
+  writeParquetToStudiesS3(odmobj = odmp)
+}
+
+transformODM = function(studyname) {
   odmp=odmObj$new(studyname = studyname, odmFileLocation = getStandardS3StudyODMLocation(studyname))
   odmp$parseODM()
-  writeParquetToStudiesS3(odmobj = odmp)
+
+  odmp
 }
 
 # fetch redcap study data to s3, run parquet generation, and update the data catalog
