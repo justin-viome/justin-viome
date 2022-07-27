@@ -2,7 +2,7 @@ FROM rocker/tidyverse:4.1.2
 
 WORKDIR /home
 
-RUN apt-get -y update -qq \ 
+RUN apt-get -y update -qq \
   && apt-get install -y --no-install-recommends \
     awscli
 
@@ -21,8 +21,7 @@ RUN R CMD INSTALL --preclean --no-multiarch --with-keep.source odmparquet
 
 COPY scripts scripts
 
-ENV S3_ODM_LOCATION=s3://viome-studies/v128.234/ODM/V128_Pilot_odm_export_20220601012550.xml
-ENV S3_ODM_STUDY_NAME=v128.234-test
+ENV S3_ODM_STUDY_NAME=
 
 ENV AWS_ACCESS_KEY_ID=
 ENV AWS_SECRET_ACCESS_KEY=
